@@ -1,0 +1,91 @@
+{
+  "name": "MedConnect Connectivity Test Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "medconnect-test",
+        "responseMode": "lastNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [100, 300],
+      "webhookId": "medconnect-test-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.headers['x-webhook-secret'] || $json.headers['X-Webhook-Secret'] }}",
+              "value2": "medconnect-n8n-secret-key"
+            }
+          ]
+        }
+      },
+      "name": "Validate Request & Auth",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [300, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { success: true, source: 'n8n' } }];"
+      },
+      "name": "Success Response Node",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [500, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { success: false, error: 'UNAUTHORIZED_WEBHOOK_SECRET', statusCode: 401 } }];"
+      },
+      "name": "Unauthorized Response Node",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [500, 400]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Request & Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Request & Auth": {
+      "main": [
+        [
+          {
+            "node": "Success Response Node",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Unauthorized Response Node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "v1.0.1",
+  "id": "wf-medconnect-test"
+}

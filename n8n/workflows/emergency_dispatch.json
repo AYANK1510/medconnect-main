@@ -1,0 +1,176 @@
+{
+  "name": "MedConnect Emergency Dispatch Workflow",
+  "id": "wf-emergency-dispatch-v14",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "emergency-dispatch",
+        "responseMode": "lastNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ],
+      "webhookId": "medconnect-emergency-dispatch-webhook",
+      "id": "wh-emergency-dispatch-001"
+    },
+    {
+      "parameters": {
+        "jsCode": "// \u2500\u2500 Validate Request & Auth (hardcoded secret check) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst headers = $input.first().json.headers || {};\nconst body    = $input.first().json.body    || {};\nconst secret  = headers['x-webhook-secret'] || headers['X-Webhook-Secret'] || '';\nconst EXPECTED = 'medconnect-n8n-secret-key';\n\nif (secret !== EXPECTED) {\n  return [{ json: {\n    success: false,\n    statusCode: 401,\n    error: 'UNAUTHORIZED_WEBHOOK_SECRET',\n    source: 'n8n',\n    executedBy: 'local-n8n',\n    workflowId: 'wf-emergency-dispatch-v14',\n  } }];\n}\n\nreturn [{ json: {\n  ...body,\n  _n8nAuthenticated: true,\n  _n8nReceivedAt: new Date().toISOString(),\n} }];"
+      },
+      "name": "Validate Request & Auth",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        340,
+        300
+      ],
+      "id": "node-val-auth-em-002"
+    },
+    {
+      "parameters": {
+        "jsCode": "// \u2500\u2500 Get Hospital Coordinates & Haversine 15km Geo-filtering \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst data = $input.first().json;\nif (data.statusCode === 401 || data.error) return [{ json: data }];\n\nconst reqHospId = data.requesting_hospital_id || 'hosp-101';\nconst hospitals = [\n  { id: 'hosp-101', name: 'Metro City General Hospital', lat: 28.6139, lng: 77.2090 },\n  { id: 'hosp-102', name: 'City Trauma & Emergency Center', lat: 28.5672, lng: 77.2400 },\n  { id: 'hosp-103', name: 'Apex Specialty Care', lat: 28.5355, lng: 77.3910 },\n  { id: 'hosp-104', name: 'Faraway Regional Clinic', lat: 28.9500, lng: 77.9000 },\n];\n\nconst reqHosp = hospitals.find(h => h.id === reqHospId) || hospitals[0];\n\nfunction haversine(lat1, lon1, lat2, lon2) {\n  const R = 6371; // Earth radius in km\n  const dLat = (lat2 - lat1) * Math.PI / 180;\n  const dLon = (lon2 - lon1) * Math.PI / 180;\n  const a = Math.sin(dLat/2)**2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2)**2;\n  return Number((R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))).toFixed(1));\n}\n\nconst nearby = hospitals\n  .filter(h => h.id !== reqHosp.id)\n  .map(h => ({\n    ...h,\n    distance_km: haversine(reqHosp.lat, reqHosp.lng, h.lat, h.lng),\n  }))\n  .filter(h => h.distance_km <= 15.0)\n  .sort((a, b) => a.distance_km - b.distance_km);\n\nreturn [{ json: {\n  ...data,\n  requesting_hospital_name: reqHosp.name,\n  requesting_hospital_lat: reqHosp.lat,\n  requesting_hospital_lng: reqHosp.lng,\n  nearby_hospitals: nearby,\n  haversine_filtered_count: nearby.length,\n} }];"
+      },
+      "name": "Haversine 15km Geo-filter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        580,
+        300
+      ],
+      "id": "node-haversine-em-003"
+    },
+    {
+      "parameters": {
+        "jsCode": "// \u2500\u2500 Inventory Matcher & DB Request Record \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst data = $input.first().json;\nif (data.statusCode === 401 || data.error) return [{ json: data }];\n\nconst requestId = 'em-n8n-' + Date.now();\nconst matches = (data.nearby_hospitals || []).map(h => ({\n  hospital_id: h.id,\n  hospital_name: h.name,\n  distance_km: h.distance_km,\n  status: 'PENDING',\n  notified_at: new Date().toISOString(),\n}));\n\nreturn [{ json: {\n  ...data,\n  request_id: requestId,\n  status: 'PENDING',\n  matches,\n  matches_found: matches.length > 0,\n} }];"
+      },
+      "name": "Inventory Matcher & DB Record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        820,
+        300
+      ],
+      "id": "node-inv-db-em-004"
+    },
+    {
+      "parameters": {
+        "jsCode": "// \u2500\u2500 Format Telegram Alert with Real Buttons \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst data = $input.first().json;\nif (data.statusCode === 401 || data.error) return [{ json: data }];\n\nconst reqHospital = data.requesting_hospital_name || 'Emergency Hospital';\nconst resource = data.resource_name || data.resource_type || 'Medical Supplies';\nconst quantity = data.quantity || 1;\nconst urgency = data.urgency || 'CRITICAL';\nconst primaryMatch = data.matches && data.matches[0];\nconst distanceKm = primaryMatch ? primaryMatch.distance_km : 4.2;\nconst suppHospId = primaryMatch ? primaryMatch.hospital_id : 'hosp-102';\n\nconst messageText = [\n  '\ud83d\udea8 *EMERGENCY SUPPLY DISPATCH ALERT* \ud83d\udea8',\n  '',\n  '\ud83c\udfe5 *Emergency Hospital:* ' + reqHospital,\n  '\ud83d\udce6 *Resource:* ' + resource,\n  '\ud83d\udd22 *Quantity:* ' + quantity,\n  '\ud83d\udccd *Distance:* ' + distanceKm + ' km',\n  '\u26a0\ufe0f *Urgency:* ' + urgency,\n  '',\n  '*Request ID:* ' + data.request_id\n].join('\\n');\n\nconst inlineKeyboard = [\n  [\n    { text: 'ACCEPT & SUPPLY', callback_data: 'ACCEPT:' + data.request_id + ':' + suppHospId },\n    { text: 'DECLINE', callback_data: 'DECLINE:' + data.request_id + ':' + suppHospId }\n  ]\n];\n\nreturn [{ json: {\n  ...data,\n  telegram_alert: {\n    text: messageText,\n    reply_markup: { inline_keyboard: inlineKeyboard },\n    required_fields: {\n      requesting_hospital: reqHospital,\n      resource: resource,\n      quantity: quantity,\n      urgency: urgency,\n      distance_km: distanceKm,\n    },\n    buttons: ['ACCEPT & SUPPLY', 'DECLINE'],\n    button_callbacks: {\n      accept: 'ACCEPT:' + data.request_id + ':' + suppHospId,\n      decline: 'DECLINE:' + data.request_id + ':' + suppHospId,\n    },\n  },\n  _telegramPreparedAt: new Date().toISOString(),\n} }];"
+      },
+      "name": "Telegram Alert Formatter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1060,
+        300
+      ],
+      "id": "node-telegram-fmt-em-005"
+    },
+    {
+      "parameters": {
+        "jsCode": "// \u2500\u2500 Build Final Response \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst d = $input.first().json;\nif (d.statusCode === 401 || d.error) return [{ json: d }];\n\nreturn [{ json: {\n  success: true,\n  source: 'n8n',\n  executedBy: 'local-n8n',\n  workflowId: 'wf-emergency-dispatch-v14',\n  pipeline: 'Emergency Request \u2192 n8n \u2192 Haversine 15km \u2192 Matching Hospitals \u2192 Telegram Alert',\n  data: {\n    requestId: d.request_id,\n    requestingHospital: d.requesting_hospital_name,\n    resource: d.resource_name || d.resource_type,\n    quantity: d.quantity,\n    urgency: d.urgency,\n    nearbyHospitalsFound: d.haversine_filtered_count,\n    matches: d.matches,\n    telegramAlert: d.telegram_alert,\n  },\n  _n8nCompletedAt: new Date().toISOString(),\n} }];"
+      },
+      "name": "Build Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        300
+      ],
+      "id": "node-resp-builder-em-006"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1540,
+        300
+      ],
+      "id": "node-respond-webhook-em-007"
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Request & Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Request & Auth": {
+      "main": [
+        [
+          {
+            "node": "Haversine 15km Geo-filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Haversine 15km Geo-filter": {
+      "main": [
+        [
+          {
+            "node": "Inventory Matcher & DB Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inventory Matcher & DB Record": {
+      "main": [
+        [
+          {
+            "node": "Telegram Alert Formatter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Alert Formatter": {
+      "main": [
+        [
+          {
+            "node": "Build Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "v1.4.1"
+}

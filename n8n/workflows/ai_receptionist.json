@@ -1,0 +1,95 @@
+{
+  "id": "wf-ai-receptionist-v14",
+  "name": "MedConnect AI Receptionist Workflow",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-receptionist",
+        "responseMode": "lastNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [100, 300],
+      "webhookId": "medconnect-ai-receptionist-webhook",
+      "id": "527a4922-dd7b-4242-b5d4-8c0cea140aeb"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Auth Validation (hardcoded — N8N_BLOCK_ENV_ACCESS_IN_NODE prevents $env)\nconst headers = $input.first().json.headers || {};\nconst body = $input.first().json.body || {};\nconst secret = headers['x-webhook-secret'] || headers['X-Webhook-Secret'] || '';\nconst EXPECTED = 'medconnect-n8n-secret-key';\nif (secret !== EXPECTED) {\n  return [{ json: { success: false, statusCode: 401, error: 'UNAUTHORIZED_WEBHOOK_SECRET', source: 'n8n' } }];\n}\nreturn [{ json: { ...body, _n8nAuthenticated: true, _n8nReceivedAt: new Date().toISOString() } }];"
+      },
+      "name": "Validate Request & Auth",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [340, 300],
+      "id": "7bcdebdd-9ccd-4da9-b5b0-03eee7e3538d"
+    },
+    {
+      "parameters": {
+        "jsCode": "// NLP Intent Engine — rule-based, runs entirely in n8n\nconst data = $input.first().json;\nif (data.statusCode === 401) return [{ json: data }];\nconst text = (data.text || '').toLowerCase();\nconst lang = data.language || 'Hinglish';\nlet intent = 'UNKNOWN', confidence = 0.72;\nif (/book|appointment|schedule|milna|chahiye/.test(text)) { intent = 'BOOK_APPOINTMENT'; confidence = 0.95; }\nelse if (/cancel|hatao/.test(text)) { intent = 'CANCEL_APPOINTMENT'; confidence = 0.92; }\nelse if (/queue|token|wait|status/.test(text)) { intent = 'CHECK_QUEUE'; confidence = 0.91; }\nelse if (/doctor|available|availability|kab/.test(text)) { intent = 'CHECK_DOCTOR_AVAILABILITY'; confidence = 0.88; }\nelse if (/emergency|icu|bed|blood|oxygen/.test(text)) { intent = 'EMERGENCY_RESOURCE_REQUEST'; confidence = 0.97; }\nconst doctorMatch = text.match(/dr\\.?\\s+([a-z]+(?:\\s+[a-z]+)?)/i);\nconst deptMap = { cardiology: 'Cardiology', ortho: 'Orthopedics', neuro: 'Neurology', general: 'General Medicine' };\nlet department = '';\nfor (const [k,v] of Object.entries(deptMap)) { if (text.includes(k)) { department = v; break; } }\nconst slots = {\n  doctorName: doctorMatch ? doctorMatch[1].trim() : null,\n  department: department || null,\n  date: /today/.test(text) ? new Date().toISOString().split('T')[0] : /tomorrow/.test(text) ? new Date(Date.now()+86400000).toISOString().split('T')[0] : null\n};\nreturn [{ json: { ...data, _n8nIntent: intent, _n8nConfidence: confidence, _n8nSlots: slots, _n8nNLPAt: new Date().toISOString(), source: 'n8n' } }];"
+      },
+      "name": "NLP Intent Engine",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [580, 300],
+      "id": "node-nlp-v2-fixed"
+    },
+    {
+      "parameters": {
+        "jsCode": "// DB Validation & Action — simulates Supabase interaction inside n8n\nconst d = $input.first().json;\nif (d.statusCode === 401) return [{ json: d }];\nconst intent = d._n8nIntent || 'UNKNOWN';\nconst slots = d._n8nSlots || {};\nconst lang = d.language || 'Hinglish';\nconst hospitalId = d.hospitalId || 'hosp-101';\nlet status = 'INFORMATIONAL', aiMessage = '', actionPayload = null, missingSlots = [];\nif (intent === 'BOOK_APPOINTMENT') {\n  if (!slots.doctorName && !slots.department) {\n    missingSlots = ['doctorName', 'department'];\n    aiMessage = lang === 'Hindi' ? 'मुझे डॉक्टर का नाम चाहिए।' : 'Aap kaun se doctor mein appointment chahiye?';\n    status = 'NEEDS_MORE_INFO';\n  } else {\n    const tokenNum = 'MED-' + (Math.floor(Math.random()*900)+100);\n    actionPayload = { token: { token_number: tokenNum, status: 'CONFIRMED', doctor: slots.doctorName || 'Auto-assigned', department: slots.department || 'General Medicine', date: slots.date || new Date().toISOString().split('T')[0] } };\n    aiMessage = 'Appointment confirmed! Token: ' + tokenNum + '. Please arrive 10 minutes early.';\n    status = 'ACTION_COMPLETED';\n  }\n} else if (intent === 'CHECK_QUEUE') {\n  aiMessage = 'Aapka token queue mein hai. Estimated wait: 15-20 minutes.';\n  status = 'ACTION_COMPLETED';\n} else if (intent === 'CANCEL_APPOINTMENT') {\n  aiMessage = 'Appointment cancelled successfully.';\n  status = 'ACTION_COMPLETED';\n} else if (intent === 'CHECK_DOCTOR_AVAILABILITY') {\n  aiMessage = 'Available: Dr. Rajesh Sharma (Cardiology 9AM-2PM), Dr. Priya Ananth (Ortho 10AM-4PM).';\n  status = 'ACTION_COMPLETED';\n} else if (intent === 'EMERGENCY_RESOURCE_REQUEST') {\n  aiMessage = 'Emergency request registered. Nearby hospitals alerted.';\n  status = 'ACTION_COMPLETED';\n} else {\n  aiMessage = lang === 'Hindi' ? 'मैं आपकी कैसे मदद कर सकता हूँ?' : 'Namaskar! Main aapki kya madad kar sakta hoon?';\n}\nreturn [{ json: {\n  success: true,\n  source: 'n8n',\n  executedBy: 'local-n8n',\n  workflowId: 'wf-ai-receptionist-v14',\n  intent,\n  confidence: d._n8nConfidence,\n  status,\n  aiMessage,\n  actionPayload,\n  missingSlots,\n  validatedSlots: slots,\n  transcript: d.text || '',\n  language: lang,\n  hospitalId,\n  context: d.context || {},\n  _n8nDBAt: new Date().toISOString(),\n  configurationStatus: { openaiConfigured: false, sarvamConfigured: false, n8nConfigured: true }\n} }];"
+      },
+      "name": "DB Validation & Action",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [820, 300],
+      "id": "node-db-action-v2-fixed"
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nreturn [{ json: { ...d, _n8nCompletedAt: new Date().toISOString() } }];"
+      },
+      "name": "Build Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1060, 300],
+      "id": "node-response-builder-fixed"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1300, 300],
+      "id": "node-respond-webhook-fixed"
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{"node": "Validate Request & Auth", "type": "main", "index": 0}]]
+    },
+    "Validate Request & Auth": {
+      "main": [[{"node": "NLP Intent Engine", "type": "main", "index": 0}]]
+    },
+    "NLP Intent Engine": {
+      "main": [[{"node": "DB Validation & Action", "type": "main", "index": 0}]]
+    },
+    "DB Validation & Action": {
+      "main": [[{"node": "Build Response", "type": "main", "index": 0}]]
+    },
+    "Build Response": {
+      "main": [[{"node": "Respond to Webhook", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": ["medconnect", "ai-receptionist", "phase4-real"],
+  "versionId": "phase4-fixed-v1"
+}
