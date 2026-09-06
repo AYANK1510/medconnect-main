@@ -5,6 +5,12 @@ import type { ReceptionistResponse, ConversationContext } from '../services/rece
 import { checkN8nHealth } from '../services/n8nRealIntegration';
 import { dbEngine } from '../lib/dbEngine';
 import {
+  startListening,
+  playAudioCue,
+  type SpeechRecognitionController,
+  isNativeSpeechRecognitionSupported,
+} from '../services/speechRecognitionService';
+import {
   Mic, MicOff, Send, Bot, Globe, Zap, Volume2, VolumeX,
   CheckCircle2, AlertCircle, Clock, User, Stethoscope,
   RotateCcw, Download, ListOrdered, Phone, MapPin,
@@ -25,6 +31,7 @@ interface ChatMessage {
   validatedSlots?: Record<string, any>;
   actionPayload?: any;
   pipelineSteps?: PipelineStep[];
+  suggestedActions?: { label: string; text: string; icon?: string }[];
   isVoice?: boolean;
 }
 
@@ -127,18 +134,23 @@ async function animatePipeline(
 
 // ─── Waveform Bars ────────────────────────────────────────────────────────────
 
-const WaveformBars: React.FC<{ active: boolean }> = ({ active }) => (
-  <div className="flex items-end gap-0.5 h-8">
-    {[...Array(12)].map((_, i) => (
-      <div
-        key={i}
-        className={`w-1 rounded-full transition-all ${active ? 'bg-red-400' : 'bg-slate-600'}`}
-        style={{
-          height: active ? `${20 + Math.sin(Date.now() / 200 + i) * 14}px` : '4px',
-          animation: active ? `wave ${0.6 + i * 0.07}s ease-in-out infinite alternate` : 'none',
-        }}
-      />
-    ))}
+const WaveformBars: React.FC<{ active: boolean; volume?: number }> = ({ active, volume = 0 }) => (
+  <div className="flex items-end gap-1 h-10 px-2">
+    {[...Array(16)].map((_, i) => {
+      const factor = 0.35 + Math.sin(i * 0.4) * 0.65;
+      const heightPx = active
+        ? Math.max(5, Math.min(36, Math.round((volume * 0.35 * factor) + (Math.sin(Date.now() / 150 + i) * 6) + 6)))
+        : 4;
+      return (
+        <div
+          key={i}
+          className={`w-1 rounded-full transition-all duration-75 ${
+            active ? (volume > 45 ? 'bg-cyan-300 shadow-sm shadow-cyan-400' : 'bg-cyan-500') : 'bg-slate-700'
+          }`}
+          style={{ height: `${heightPx}px` }}
+        />
+      );
+    })}
   </div>
 );
 
@@ -217,6 +229,9 @@ export const AiReceptionistPage: React.FC = () => {
   const [step, setStep] = useState<'idle' | 'recording' | 'processing' | 'speaking'>('idle');
   const [inputText, setInputText] = useState('');
   const [countdown, setCountdown] = useState(0);
+  const [liveInterimText, setLiveInterimText] = useState('');
+  const [audioVolume, setAudioVolume] = useState(0);
+  const [micError, setMicError] = useState<string | null>(null);
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const [conversationContext, setConversationContext] = useState<ConversationContext>({});
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([
@@ -237,6 +252,11 @@ export const AiReceptionistPage: React.FC = () => {
   const [departmentsList, setDepartmentsList] = useState(() => dbEngine.getDepartments('hosp-101'));
   const [sidebarTab, setSidebarTab] = useState<'doctors' | 'intents'>('doctors');
 
+  const chatRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const speechControllerRef = useRef<SpeechRecognitionController | null>(null);
+
   useEffect(() => {
     return dbEngine.subscribe(() => {
       setDoctorsList(dbEngine.getDoctors('hosp-101'));
@@ -248,16 +268,12 @@ export const AiReceptionistPage: React.FC = () => {
     checkN8nHealth().then(res => setN8nStatus(res.healthy)).catch(() => setN8nStatus(false));
   }, []);
 
-  const chatRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   // Auto-scroll chat to bottom
   useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
-  }, [chatHistory, activePipeline]);
+  }, [chatHistory, activePipeline, liveInterimText]);
 
   // Update welcome message when language changes
   useEffect(() => {
@@ -269,8 +285,18 @@ export const AiReceptionistPage: React.FC = () => {
     });
   }, [selectedLang]);
 
-  // Cleanup TTS on unmount
-  useEffect(() => () => stopSpeaking(), []);
+  // Cleanup TTS and Mic on unmount
+  useEffect(() => {
+    return () => {
+      stopSpeaking();
+      if (speechControllerRef.current) {
+        speechControllerRef.current.abort();
+      }
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current);
+      }
+    };
+  }, []);
 
   const addMessage = useCallback((msg: Omit<ChatMessage, 'id' | 'timestamp'>) => {
     const full: ChatMessage = { ...msg, id: `msg-${Date.now()}-${Math.random()}`, timestamp: new Date() };
@@ -279,21 +305,22 @@ export const AiReceptionistPage: React.FC = () => {
   }, []);
 
   const handleRunTurn = useCallback(async (textToProcess?: string, audioBlob?: Blob) => {
-    const userText = textToProcess || inputText;
+    const userText = (textToProcess || inputText).trim();
     if (!userText && !audioBlob) return;
 
     setStep('processing');
     setInputText('');
+    setMicError(null);
 
-    // Add user message
-    addMessage({
+    // Add user message with actual text or audio status
+    const userMsg = addMessage({
       sender: 'user',
-      text: userText || '🎤 Voice message recorded',
-      isVoice: !!audioBlob,
+      text: userText || '🎤 Processing voice...',
+      isVoice: Boolean(audioBlob || textToProcess),
     });
 
     // Setup pipeline animation
-    const pipelineSteps = buildPipelineSteps(!!audioBlob);
+    const pipelineSteps = buildPipelineSteps(Boolean(audioBlob && !userText));
     setActivePipeline([...pipelineSteps]);
 
     // Animate pipeline while waiting
@@ -304,7 +331,7 @@ export const AiReceptionistPage: React.FC = () => {
     try {
       res = await processReceptionistTurn({
         channel: audioBlob ? 'mic' : 'text',
-        text: userText,
+        text: userText || undefined,
         audioBlob,
         language: selectedLang,
         context: conversationContext,
@@ -326,22 +353,33 @@ export const AiReceptionistPage: React.FC = () => {
     await pipelinePromise;
     setActivePipeline(null);
 
+    // If audio was transcribed by backend STT, update user's message with their actual words
+    if (!userText && res.transcript) {
+      setChatHistory(prev =>
+        prev.map(m => (m.id === userMsg.id ? { ...m, text: res.transcript } : m))
+      );
+    }
+
     // Update config status
     setSarvamStatus(res.configurationStatus.sarvamConfigured);
     setOpenaiStatus(res.configurationStatus.openaiConfigured);
     setConversationContext(res.context || {});
 
-    // Add assistant message
+    // Add assistant message with interactive suggestedActions
     addMessage({
       sender: 'assistant',
       text: res.aiMessage,
       status: res.status,
       intent: res.intent,
-      confidence: res.configurationStatus.openaiConfigured ? 98 : 90,
+      confidence: res.configurationStatus.openaiConfigured ? 98 : 95,
       validatedSlots: res.validatedSlots,
       actionPayload: res.actionPayload,
+      suggestedActions: res.suggestedActions,
       pipelineSteps: pipelineSteps.map(s => ({ ...s, status: 'done' })),
     });
+
+    // Play pleasant completion chime
+    playAudioCue('success');
 
     // Text-to-Speech
     if (ttsEnabled && res.aiMessage) {
@@ -353,66 +391,127 @@ export const AiReceptionistPage: React.FC = () => {
     }
   }, [inputText, selectedLang, conversationContext, ttsEnabled, addMessage]);
 
-  // Mic recording with countdown
+  // Stop recording and process captured speech
+  const stopRecording = useCallback(async () => {
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
+    const controller = speechControllerRef.current;
+    speechControllerRef.current = null;
+    setCountdown(0);
+    setAudioVolume(0);
+
+    if (controller) {
+      setStep('processing');
+      try {
+        const { transcript, audioBlob } = await controller.stop();
+        const spokenText = transcript.trim();
+        setLiveInterimText('');
+
+        if (spokenText) {
+          // Native Speech API heard the user's exact words!
+          await handleRunTurn(spokenText, audioBlob || undefined);
+        } else if (audioBlob) {
+          // Seamless fallback to Sarvam AI STT saarika:v2.5
+          await handleRunTurn(undefined, audioBlob);
+        } else {
+          setStep('idle');
+          setMicError('No voice detected. Please speak into the mic and try again.');
+        }
+      } catch (err: any) {
+        setStep('idle');
+        setMicError(`Voice error: ${err.message || 'Failed to process audio'}`);
+      }
+    } else {
+      setStep('idle');
+    }
+  }, [handleRunTurn]);
+
+  // Mic recording with auto-silence detection & live speech recognition
   const handleMicClick = useCallback(async () => {
     if (step === 'recording') return;
-    const RECORD_SECONDS = 5;
+    setMicError(null);
+    setLiveInterimText('');
+    setAudioVolume(0);
+    const RECORD_SECONDS = 10;
 
     try {
       setStep('recording');
       setCountdown(RECORD_SECONDS);
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      const audioChunks: Blob[] = [];
+      const controller = await startListening({
+        language: selectedLang,
+        autoStopOnSilence: true,
+        silenceThresholdMs: 1800,
+        onInterimText: (interim) => {
+          setLiveInterimText(interim);
+        },
+        onVolumeChange: (vol) => {
+          setAudioVolume(vol);
+        },
+        onSilenceDetected: async () => {
+          // VAD: User paused speaking, automatically finalize capture
+          await stopRecording();
+        },
+        onError: (err) => {
+          console.warn('[AiReceptionistPage] mic notice:', err);
+          if (err.includes('denied') || err.includes('blocked')) {
+            setMicError(err);
+          }
+        },
+      });
 
-      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-      mediaRecorder.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop());
-        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-        await handleRunTurn(undefined, audioBlob);
-      };
+      speechControllerRef.current = controller;
 
-      // Countdown timer
       let remaining = RECORD_SECONDS;
-      countdownRef.current = setInterval(() => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+      countdownRef.current = setInterval(async () => {
         remaining -= 1;
         setCountdown(remaining);
         if (remaining <= 0) {
-          clearInterval(countdownRef.current!);
-          if (mediaRecorder.state === 'recording') mediaRecorder.stop();
+          if (countdownRef.current) clearInterval(countdownRef.current);
+          countdownRef.current = null;
+          await stopRecording();
         }
       }, 1000);
-
-      mediaRecorder.start();
-    } catch {
+    } catch (err: any) {
       setStep('idle');
       setCountdown(0);
-      // Mic not available — cycle demo text across different doctors
-      const demoPhrases = [
-        'Mujhe Dr. Rajesh Sharma se Cardiology me appointment chahiye aaj 11 baje.',
-        'Mujhe Dr. Priya Ananth se Orthopedics me consultation appointment chahiye aaj.',
-        'Mujhe Dr. Amit Patel se General Medicine me checkup ke liye book karna hai.',
-        'Mujhe Dr. Vikram Malhotra se Neurology department me appointment chahiye.',
-        'Mujhe Dr. Sunita Rao se Dermatology me appointment chahiye skin checkup ke liye.',
-        'Mujhe Dr. Ananya Roy se Pediatrics me child checkup ke liye appointment chahiye.',
-      ];
-      const randomPhrase = demoPhrases[Math.floor(Math.random() * demoPhrases.length)];
-      await handleRunTurn(randomPhrase);
+      setMicError(err.message || 'Could not access microphone');
     }
-  }, [step, handleRunTurn]);
+  }, [step, selectedLang, stopRecording]);
 
-  const stopRecording = () => {
-    if (countdownRef.current) clearInterval(countdownRef.current);
+  const handleEditLiveText = () => {
+    const currentWords = liveInterimText;
+    if (speechControllerRef.current) {
+      speechControllerRef.current.abort();
+      speechControllerRef.current = null;
+    }
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
     setStep('idle');
     setCountdown(0);
+    setAudioVolume(0);
+    setLiveInterimText('');
+    if (currentWords) {
+      setInputText(currentWords);
+    }
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
   };
 
   const resetConversation = () => {
     stopSpeaking();
+    if (speechControllerRef.current) speechControllerRef.current.abort();
     setConversationContext({});
     setActivePipeline(null);
     setStep('idle');
+    setLiveInterimText('');
+    setMicError(null);
     setChatHistory([{
       id: 'welcome',
       sender: 'system',
@@ -518,21 +617,77 @@ export const AiReceptionistPage: React.FC = () => {
 
           {/* Mic Input */}
           <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
-            <div className="text-xs font-semibold text-slate-400 flex items-center gap-2">
-              <Mic className="w-3.5 h-3.5 text-cyan-400" />
-              Voice Input (Browser Mic)
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-400">
+              <span className="flex items-center gap-2">
+                <Mic className="w-3.5 h-3.5 text-cyan-400" />
+                Voice Input (Browser Mic)
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300">
+                {isNativeSpeechRecognitionSupported() ? 'Web Speech API' : 'Sarvam STT'}
+              </span>
             </div>
 
-            {/* Waveform + Countdown */}
-            <div className="flex items-center justify-center gap-6 py-2">
-              <WaveformBars active={step === 'recording'} />
+            {/* Live Audio Visualizer / Waveform */}
+            <div className="flex flex-col items-center justify-center gap-2 py-2 bg-slate-950/60 rounded-xl border border-slate-800/80">
+              <div className="flex items-center justify-center gap-6">
+                <WaveformBars active={step === 'recording'} volume={audioVolume} />
+                {step === 'recording' && (
+                  <div className="relative flex items-center justify-center">
+                    <CountdownRing seconds={countdown} total={8} />
+                    <span className="absolute text-lg font-black text-white font-mono">{countdown}</span>
+                  </div>
+                )}
+              </div>
               {step === 'recording' && (
-                <div className="relative flex items-center justify-center">
-                  <CountdownRing seconds={countdown} total={5} />
-                  <span className="absolute text-lg font-black text-white font-mono">{countdown}</span>
+                <div className="text-[11px] font-mono text-cyan-300 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                  Mic Level: {audioVolume}%
                 </div>
               )}
             </div>
+
+            {/* Live Hearing Text Preview */}
+            {step === 'recording' && (
+              <div className="p-3.5 rounded-xl bg-cyan-950/50 border border-cyan-500/40 text-xs space-y-2">
+                <div className="flex items-center justify-between text-[10px] font-mono text-cyan-400 font-bold uppercase">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                    Live Speech Capture ({selectedLang})
+                  </span>
+                  <span className="text-slate-400 font-normal">Auto-sends on pause</span>
+                </div>
+                <div className="text-white font-medium italic min-h-[28px] bg-slate-950/60 p-2.5 rounded-lg border border-cyan-500/20 text-xs">
+                  {liveInterimText || 'Listening... Speak naturally in Hindi, English, or Hinglish.'}
+                </div>
+                {liveInterimText && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={stopRecording}
+                      className="flex-1 py-1.5 px-3 rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs hover:bg-emerald-400 transition flex items-center justify-center gap-1 shadow-sm"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Send These Words
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleEditLiveText}
+                      className="py-1.5 px-3 rounded-lg bg-slate-800 text-cyan-300 font-semibold text-xs hover:bg-slate-700 border border-cyan-500/30 transition flex items-center gap-1"
+                    >
+                      ✏️ Edit
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Error banner */}
+            {micError && (
+              <div className="p-2.5 rounded-xl bg-rose-950/50 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between">
+                <span className="truncate">⚠️ {micError}</span>
+                <button onClick={() => setMicError(null)} className="text-rose-400 hover:text-white font-bold ml-2">✕</button>
+              </div>
+            )}
 
             <button
               onClick={step === 'recording' ? stopRecording : handleMicClick}
@@ -546,20 +701,20 @@ export const AiReceptionistPage: React.FC = () => {
               }`}
             >
               {step === 'recording' ? (
-                <><MicOff className="w-5 h-5" /><span>Stop Recording</span></>
+                <><MicOff className="w-5 h-5" /><span>Stop Recording (Process Words)</span></>
               ) : step === 'speaking' ? (
                 <><Volume2 className="w-5 h-5 animate-pulse" /><span>AI Speaking...</span></>
               ) : (
-                <><Mic className="w-5 h-5" /><span>🎤 Tap & Speak (5 sec)</span></>
+                <><Mic className="w-5 h-5" /><span>🎤 Tap to Speak ({selectedLang})</span></>
               )}
             </button>
 
             <p className="text-[10px] text-slate-500 text-center">
               {step === 'recording'
-                ? 'Recording… speak your request now'
+                ? 'Auto-detects when you finish speaking • or tap stop'
                 : step === 'speaking'
                 ? 'AI is speaking — TTS active'
-                : 'Allow mic access in browser when prompted'}
+                : 'Tap to speak naturally in Hindi, English, Hinglish, etc.'}
             </p>
           </div>
 
@@ -786,6 +941,22 @@ export const AiReceptionistPage: React.FC = () => {
                       <SlotCard slots={msg.validatedSlots} />
                     )}
 
+                    {/* Interactive Suggested Action Pills */}
+                    {msg.suggestedActions && msg.suggestedActions.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-1.5">
+                        {msg.suggestedActions.map((action, actIdx) => (
+                          <button
+                            key={actIdx}
+                            type="button"
+                            onClick={() => handleRunTurn(action.text)}
+                            className="px-2.5 py-1.5 rounded-xl bg-cyan-950/80 hover:bg-cyan-900/90 text-cyan-200 hover:text-white border border-cyan-500/40 hover:border-cyan-400 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm hover:scale-[1.02] active:scale-95"
+                          >
+                            <span>{action.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
                     {/* Pipeline steps */}
                     {msg.pipelineSteps && <PipelineViz steps={msg.pipelineSteps} />}
 
@@ -843,7 +1014,34 @@ export const AiReceptionistPage: React.FC = () => {
           </div>
 
           {/* Text Input Bar */}
-          <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
+          <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
+            {/* Live Listening Banner */}
+            {step === 'recording' && (
+              <div className="p-3 rounded-xl bg-cyan-950/80 border border-cyan-500/40 flex items-center justify-between gap-3 text-cyan-200 animate-slideUp">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <span className="relative flex h-2.5 w-2.5 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] font-mono text-cyan-400 font-bold uppercase">
+                      Listening live ({selectedLang})...
+                    </div>
+                    <div className="text-xs text-white font-medium truncate italic">
+                      {liveInterimText || 'Speak now into your microphone...'}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={stopRecording}
+                  className="px-3 py-1.5 rounded-lg bg-cyan-500 text-slate-950 font-bold text-xs hover:bg-cyan-400 shrink-0 shadow-md shadow-cyan-500/20"
+                >
+                  Done Speaking
+                </button>
+              </div>
+            )}
+
             <form
               onSubmit={e => { e.preventDefault(); if (inputText.trim() && !isProcessing) handleRunTurn(inputText); }}
               className="flex gap-2"

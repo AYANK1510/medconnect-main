@@ -51,6 +51,8 @@ export const PatientEntryPage: React.FC<PatientEntryPageProps> = ({ onNavigate }
       } else if (section === 'hospitals-app') {
         switchRole('hospital_admin');
         setActivePage('reception');
+      } else if (section === 'ai-receptionist' || section === 'ai_receptionist') {
+        setActivePage('ai_receptionist');
       }
     }
   };
@@ -457,8 +459,16 @@ export const PatientEntryPage: React.FC<PatientEntryPageProps> = ({ onNavigate }
                 Describe your condition naturally in Hindi, Tamil, Telugu, or English. The AI understands regional expressions and conversational speech.
               </p>
             </div>
-            <div className="text-[11px] font-medium text-teal-400 flex items-center gap-1 pt-2 border-t border-slate-800/80">
+            <div className="text-[11px] font-medium text-teal-400 flex items-center justify-between pt-2 border-t border-slate-800/80">
               <span>Natural Speech Processing</span>
+              <button
+                type="button"
+                onClick={() => navigateTo('ai-receptionist')}
+                className="text-[11px] font-bold text-teal-300 hover:text-white flex items-center gap-1 cursor-pointer bg-teal-500/20 px-2.5 py-1 rounded-lg hover:bg-teal-500/30 transition"
+              >
+                <span>Launch Portal</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
             </div>
           </div>
 
@@ -473,8 +483,16 @@ export const PatientEntryPage: React.FC<PatientEntryPageProps> = ({ onNavigate }
                 Hold to speak or type in short sentences. The system extracts symptoms, matches the right medical specialist, and checks for red-flag symptoms.
               </p>
             </div>
-            <div className="text-[11px] font-medium text-blue-400 flex items-center gap-1 pt-2 border-t border-slate-800/80">
+            <div className="text-[11px] font-medium text-blue-400 flex items-center justify-between pt-2 border-t border-slate-800/80">
               <span>Voice-first or text options</span>
+              <button
+                type="button"
+                onClick={() => navigateTo('ai-receptionist')}
+                className="text-[11px] font-bold text-blue-300 hover:text-white flex items-center gap-1 cursor-pointer bg-blue-500/20 px-2.5 py-1 rounded-lg hover:bg-blue-500/30 transition"
+              >
+                <span>Try Voice</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
             </div>
           </div>
 

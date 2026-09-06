@@ -12,7 +12,8 @@ import {
   RotateCcw,
   Menu,
   X,
-  HeartPulse
+  HeartPulse,
+  Mic,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -143,6 +144,22 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             Hospitals
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigateTo('ai-receptionist')}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+              activePage === 'ai_receptionist'
+                ? 'text-cyan-700 font-bold bg-cyan-50 border border-cyan-200'
+                : 'text-slate-700 hover:text-cyan-700 hover:bg-cyan-50/60'
+            }`}
+          >
+            <Mic className="w-3.5 h-3.5 text-cyan-600 animate-pulse" />
+            <span>AI Receptionist</span>
+            <span className="text-[9px] font-mono px-1.5 py-0.2 rounded-full bg-cyan-100 text-cyan-700 font-bold">
+              Voice
+            </span>
           </button>
 
           <button
@@ -348,6 +365,14 @@ export const Header: React.FC<HeaderProps> = ({
               className="p-2 rounded-lg bg-slate-50 text-left hover:bg-slate-100"
             >
               Hospitals
+            </button>
+            <button
+              type="button"
+              onClick={() => navigateTo('ai-receptionist')}
+              className="p-2 rounded-lg bg-cyan-50 border border-cyan-200 text-cyan-700 font-bold text-left flex items-center gap-1"
+            >
+              <Mic className="w-3.5 h-3.5 text-cyan-600" />
+              <span>AI Receptionist</span>
             </button>
             <button
               type="button"

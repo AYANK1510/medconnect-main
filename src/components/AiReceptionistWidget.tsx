@@ -3,11 +3,15 @@ import { useApp } from '../contexts/AppContext';
 import { processReceptionistTurn, getWelcomeMessage } from '../services/receptionistService';
 import type { ReceptionistResponse, ConversationContext } from '../services/receptionistService';
 import {
+  startListening,
+  type SpeechRecognitionController,
+} from '../services/speechRecognitionService';
+import {
   X, Bot, Send, Loader2, ChevronRight, Globe,
   RotateCcw, Mic, MicOff, Volume2, VolumeX,
   CheckCircle2, AlertCircle, CalendarCheck, ListOrdered,
   Stethoscope, MapPin, Siren, BriefcaseMedical, Info,
-  Activity,
+  Activity, Maximize2,
 } from 'lucide-react';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -20,6 +24,7 @@ interface ChatMsg {
   status?: string;
   validatedSlots?: Record<string, any>;
   actionPayload?: any;
+  suggestedActions?: { label: string; text: string; icon?: string }[];
   isVoice?: boolean;
   timestamp: Date;
 }
@@ -99,6 +104,7 @@ export const AiReceptionistWidget: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const [manualInput, setManualInput] = useState('');
+  const [widgetLiveText, setWidgetLiveText] = useState('');
   const [conversationContext, setConversationContext] = useState<ConversationContext>({});
   const [isPipelineRunning, setIsPipelineRunning] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([
@@ -106,12 +112,12 @@ export const AiReceptionistWidget: React.FC = () => {
   ]);
 
   const chatRef = useRef<HTMLDivElement>(null);
-  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const speechControllerRef = useRef<SpeechRecognitionController | null>(null);
 
   // Auto-scroll
   useEffect(() => {
     if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
-  }, [chatMessages, isPipelineRunning]);
+  }, [chatMessages, isPipelineRunning, widgetLiveText]);
 
   // Update welcome on lang change
   useEffect(() => {
@@ -123,7 +129,10 @@ export const AiReceptionistWidget: React.FC = () => {
     });
   }, [selectedLang]);
 
-  useEffect(() => () => stopSpeaking(), []);
+  useEffect(() => () => {
+    stopSpeaking();
+    if (speechControllerRef.current) speechControllerRef.current.abort();
+  }, []);
 
   const addMsg = useCallback((m: Omit<ChatMsg, 'id' | 'timestamp'>): ChatMsg => {
     const full: ChatMsg = { ...m, id: `m-${Date.now()}-${Math.random()}`, timestamp: new Date() };
@@ -138,6 +147,7 @@ export const AiReceptionistWidget: React.FC = () => {
     setStep('processing');
     setIsPipelineRunning(true);
     setManualInput('');
+    setWidgetLiveText('');
 
     addMsg({
       sender: 'user',
@@ -172,6 +182,7 @@ export const AiReceptionistWidget: React.FC = () => {
       intent: res.intent,
       validatedSlots: res.validatedSlots,
       actionPayload: res.actionPayload,
+      suggestedActions: res.suggestedActions,
     });
 
     if (ttsEnabled && res.aiMessage) {
@@ -183,31 +194,45 @@ export const AiReceptionistWidget: React.FC = () => {
     }
   }, [manualInput, selectedLang, conversationContext, ttsEnabled, addMsg]);
 
+  const stopRecording = useCallback(async () => {
+    const controller = speechControllerRef.current;
+    speechControllerRef.current = null;
+    setIsRecording(false);
+    setWidgetLiveText('');
+    if (controller) {
+      const { transcript, audioBlob } = await controller.stop();
+      await handleSendTurn(transcript || undefined, audioBlob || undefined);
+    }
+  }, [handleSendTurn]);
+
   const handleMicClick = useCallback(async () => {
-    if (isRecording || step === 'processing') return;
+    if (step === 'processing') return;
+    if (isRecording) {
+      await stopRecording();
+      return;
+    }
     try {
       setIsRecording(true);
       setStep('recording');
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      const chunks: Blob[] = [];
-      recorder.ondataavailable = e => chunks.push(e.data);
-      recorder.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop());
-        setIsRecording(false);
-        const blob = new Blob(chunks, { type: 'audio/wav' });
-        await handleSendTurn(undefined, blob);
-      };
-      recorder.start();
-      countdownRef.current = setTimeout(() => {
-        if (recorder.state === 'recording') recorder.stop();
-      }, 4000);
+      setWidgetLiveText('');
+      const controller = await startListening({
+        language: selectedLang,
+        autoStopOnSilence: true,
+        silenceThresholdMs: 1800,
+        onInterimText: (txt) => {
+          setWidgetLiveText(txt);
+        },
+        onSilenceDetected: async () => {
+          await stopRecording();
+        },
+        onError: () => { setIsRecording(false); setStep('idle'); setWidgetLiveText(''); }
+      });
+      speechControllerRef.current = controller;
     } catch {
       setIsRecording(false);
       setStep('idle');
-      await handleSendTurn('Mujhe Cardiology me appointment chahiye aaj.');
     }
-  }, [isRecording, step, handleSendTurn]);
+  }, [isRecording, step, selectedLang, stopRecording]);
 
   const handleResetConversation = () => {
     stopSpeaking();
@@ -266,8 +291,19 @@ export const AiReceptionistWidget: React.FC = () => {
           >
             {ttsEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
           </button>
-          <button onClick={handleResetConversation} className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition">
+          <button onClick={handleResetConversation} className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition" title="Reset conversation">
             <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => {
+              setAiWidgetOpen(false);
+              setActivePage('ai_receptionist');
+              window.history.pushState({}, '', '/ai-receptionist');
+            }}
+            className="p-1.5 rounded-lg hover:bg-slate-800 text-cyan-400 hover:text-cyan-300 transition"
+            title="Open Full AI Receptionist Portal"
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
           </button>
           <button onClick={() => setAiWidgetOpen(false)} className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition">
             <X className="w-4 h-4" />
@@ -341,6 +377,21 @@ export const AiReceptionistWidget: React.FC = () => {
                     ))}
                 </div>
               )}
+              {/* Interactive Suggested Action Buttons */}
+              {msg.suggestedActions && msg.suggestedActions.length > 0 && (
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {msg.suggestedActions.map((act, actI) => (
+                    <button
+                      key={actI}
+                      type="button"
+                      onClick={() => handleSendTurn(act.text)}
+                      className="px-2 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 hover:text-white border border-cyan-500/30 text-[10px] font-semibold transition flex items-center gap-1 shadow-sm"
+                    >
+                      <span>{act.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
               {/* Action buttons */}
               {msg.actionPayload?.token && (
                 <button
@@ -364,6 +415,22 @@ export const AiReceptionistWidget: React.FC = () => {
             </div>
           );
         })}
+
+        {/* Live speech hearing bar */}
+        {isRecording && (
+          <div className="p-2 rounded-xl bg-cyan-950/60 border border-cyan-500/40 text-[11px] text-cyan-200 animate-fadeIn">
+            <div className="flex items-center justify-between text-[9px] font-mono text-cyan-400 font-bold uppercase mb-0.5">
+              <span className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping" />
+                Hearing Voice…
+              </span>
+              <span className="text-slate-400">Auto-sends on pause</span>
+            </div>
+            <div className="italic text-white">
+              {widgetLiveText || 'Speak into microphone…'}
+            </div>
+          </div>
+        )}
 
         {/* Live processing indicator */}
         {isPipelineRunning && (

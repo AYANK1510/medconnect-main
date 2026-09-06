@@ -9,7 +9,8 @@ import {
   Terminal, 
   RotateCcw, 
   LogOut, 
-  User 
+  User,
+  Mic,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -89,6 +90,14 @@ export const PatientShell: React.FC<PatientShellProps> = ({
               </button>
             );
           })}
+          <button
+            type="button"
+            onClick={() => onNavigate('ai-receptionist')}
+            className="px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-200 text-cyan-800 hover:from-cyan-100 hover:to-blue-100 transition-all cursor-pointer shadow-xs ml-1"
+          >
+            <Mic className="w-3.5 h-3.5 text-cyan-600 animate-pulse" />
+            <span>AI Voice Desk</span>
+          </button>
         </nav>
 
         {/* Right Utility Status & Controls */}

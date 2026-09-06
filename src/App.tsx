@@ -165,6 +165,9 @@ const AppShell: React.FC = () => {
       else if (targetTab === 'doctor') setActivePage('doctors');
       else setActivePage('reception');
       window.history.pushState({}, '', `/hospitals/app/${targetTab}`);
+    } else if (section === 'ai-receptionist' || section === 'ai_receptionist') {
+      setActivePage('ai_receptionist');
+      window.history.pushState({}, '', '/ai-receptionist');
     } else if (section === 'login') {
       window.location.href = '/login';
     } else if (section === 'audit') {
@@ -262,11 +265,7 @@ const AppShell: React.FC = () => {
       case 'hospitals_landing':
         return <HospitalEntryPage onNavigate={handleNavigate} />;
       case 'ai_receptionist':
-        return (
-          <ProtectedRoute allowedRoles={['patient', 'receptionist', 'er_staff', 'hospital_admin']}>
-            <AiReceptionistPage />
-          </ProtectedRoute>
-        );
+        return <AiReceptionistPage />;
       case 'patient':
         return (
           <ProtectedRoute allowedRoles={['patient', 'receptionist', 'er_staff', 'hospital_admin']}>

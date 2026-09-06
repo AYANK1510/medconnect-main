@@ -76,7 +76,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   };
 
   const handleAiReceptionistClick = () => {
-    navigateTo('patients-landing');
+    navigateTo('ai-receptionist');
   };
 
   return (

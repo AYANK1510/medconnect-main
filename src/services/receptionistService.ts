@@ -58,6 +58,7 @@ export interface ReceptionistResponse {
   missingSlots?: string[];
   actionPayload?: any;
   context?: ConversationContext;
+  suggestedActions?: { label: string; text: string; icon?: string }[];
 }
 
 export function getReceptionistConfigStatus(): {
@@ -430,6 +431,12 @@ async function processReceptionistTurnRaw(
           aiMessage: `Bilkul! Aap kis problem ke liye doctor se milna chahte hain ya kis department me appointment chahiye? Available departments: ${deptNames}.`,
           configurationStatus: configStatus,
           missingSlots: ['department', 'doctor'],
+          suggestedActions: [
+            { label: '🩺 Dr. Rajesh Sharma (Cardiology)', text: 'Dr. Rajesh Sharma Cardiology me appointment chahiye' },
+            { label: '🦴 Dr. Priya Ananth (Orthopedics)', text: 'Dr. Priya Ananth Orthopedics me appointment chahiye' },
+            { label: '💊 Dr. Amit Patel (General Medicine)', text: 'Dr. Amit Patel General Medicine me checkup' },
+            { label: '🧠 Dr. Vikram Malhotra (Neurology)', text: 'Dr. Vikram Malhotra Neurology me appointment' },
+          ],
           context: {
             ...currentContext,
             pendingIntent: 'BOOK_APPOINTMENT',
@@ -450,6 +457,10 @@ async function processReceptionistTurnRaw(
           aiMessage: `Sahi hai. ${selectedDepartment.name} department me ye doctors available hain: ${docNames}. Aap kin doctor se konsi date ko milna chahenge?`,
           configurationStatus: configStatus,
           missingSlots: ['doctor', 'date'],
+          suggestedActions: deptDocs.map(d => ({
+            label: `👨‍⚕️ ${d.name}`,
+            text: `${d.name} se appointment chahiye aaj`,
+          })),
           context: {
             ...currentContext,
             pendingIntent: 'BOOK_APPOINTMENT',
@@ -516,6 +527,11 @@ async function processReceptionistTurnRaw(
           aiMessage: `Maaf kijiye, ${selectedDoctor!.name} ke pass ${targetDate} ko koi slot available nahi hai.${suggestion} Kripya koi dusri date chunnein.`,
           configurationStatus: configStatus,
           missingSlots: ['date'],
+          suggestedActions: [
+            { label: '📅 Aaj (Today)', text: `${selectedDoctor!.name} aaj appointment` },
+            { label: '📅 Kal (Tomorrow)', text: `${selectedDoctor!.name} kal appointment` },
+            { label: `📅 Next Slot (${nextWorkingDate})`, text: `${selectedDoctor!.name} ${nextWorkingDate} appointment` },
+          ],
           context: {
             ...currentContext,
             pendingIntent: 'BOOK_APPOINTMENT',
@@ -551,9 +567,13 @@ async function processReceptionistTurnRaw(
           status: 'NEEDS_MORE_INFO',
           intent,
           transcript: transcriptText,
-          aiMessage: `Dr. ${selectedDoctor!.name} (${selectedDepartment?.name || 'OPD'}) ke pass ${targetDate} ko ye time slots available hain: ${firstSlots}. Aap kis samay aana chahenge?`,
+          aiMessage: `${selectedDoctor!.name} (${selectedDepartment?.name || 'OPD'}) ke pass ${targetDate} ko ye time slots available hain: ${firstSlots}. Aap kis samay aana chahenge?`,
           configurationStatus: configStatus,
           missingSlots: ['timeSlot'],
+          suggestedActions: availableSlots.slice(0, 4).map(s => ({
+            label: `⏰ ${s}`,
+            text: `${selectedDoctor!.name} at ${s}`,
+          })),
           context: {
             ...currentContext,
             pendingIntent: 'BOOK_APPOINTMENT',
@@ -732,6 +752,11 @@ async function processReceptionistTurnRaw(
           aiMessage: 'Queue status check karne ke liye kripya apna Token ID (jaise MED-101) batayein.',
           configurationStatus: configStatus,
           missingSlots: ['tokenId'],
+          suggestedActions: [
+            { label: '🎫 Check MED-101', text: 'Mera token MED-101 status kya hai?' },
+            { label: '🎫 Check MED-102', text: 'Mera token MED-102 status kya hai?' },
+            { label: '📋 My Active Appointment', text: 'Mera appointment status check karo' },
+          ],
           context: currentContext,
         };
       }
@@ -747,6 +772,10 @@ async function processReceptionistTurnRaw(
         configurationStatus: configStatus,
         validatedSlots: { tokenId: token.token_number, position: metrics.queue_position },
         actionPayload: { metrics },
+        suggestedActions: [
+          { label: '🔄 Refresh Queue', text: `Token ${metrics.my_token} queue status` },
+          { label: '❌ Cancel Appointment', text: `Cancel appointment ${metrics.my_token}` },
+        ],
       };
     }
 
@@ -784,6 +813,11 @@ async function processReceptionistTurnRaw(
         configurationStatus: configStatus,
         validatedSlots: { checkDate },
         actionPayload: { availability: results },
+        suggestedActions: [
+          { label: '🩺 Book Dr. Rajesh Sharma', text: 'Book Dr. Rajesh Sharma Cardiology today' },
+          { label: '🦴 Book Dr. Priya Ananth', text: 'Book Dr. Priya Ananth Orthopedics today' },
+          { label: '💊 Book Dr. Amit Patel', text: 'Book Dr. Amit Patel General Medicine today' },
+        ],
       };
     }
 

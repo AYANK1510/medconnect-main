@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchDoctors, fetchDepartments, calculateAvailableSlots, createAppointment, fetchAppointments, cancelAppointment } from '../services/appointmentService';
 import { processVoiceIntake, type StructuredIntent } from '../services/voiceAiService';
+import { startListening, type SpeechRecognitionController } from '../services/speechRecognitionService';
 import type { Doctor, Department, Appointment, QueueToken } from '../types/database.types';
 import { dbEngine } from '../lib/dbEngine';
 import {
@@ -500,8 +501,6 @@ export const PatientPortalPage: React.FC<PatientPortalPageProps> = ({
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
   const [voiceIntent, setVoiceIntent] = useState<StructuredIntent | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
 
   const loadData = async () => {
     const docs = await fetchDoctors('hosp-101');
@@ -589,39 +588,39 @@ export const PatientPortalPage: React.FC<PatientPortalPageProps> = ({
     }
   };
 
+  const speechControllerRef = useRef<SpeechRecognitionController | null>(null);
+
   // Voice AI recording handlers
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = recorder;
-      audioChunksRef.current = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) {
-          audioChunksRef.current.push(e.data);
-        }
-      };
-      recorder.start();
       setIsRecording(true);
+      const controller = await startListening({
+        language: 'Hinglish',
+        onError: (err) => console.warn('Voice intake mic error:', err),
+      });
+      speechControllerRef.current = controller;
     } catch {
-      setIsRecording(true);
+      setIsRecording(false);
     }
   };
 
   const stopRecording = async () => {
     setIsRecording(false);
     setIsProcessingVoice(true);
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.onstop = async () => {
-        const audioBlob = audioChunksRef.current.length > 0 ? new Blob(audioChunksRef.current, { type: 'audio/wav' }) : null;
-        const intent = await processVoiceIntake(audioBlob, 'I want to book a Cardiology appointment with Dr. Sharma tomorrow.');
+    const controller = speechControllerRef.current;
+    speechControllerRef.current = null;
+
+    if (controller) {
+      try {
+        const { transcript, audioBlob } = await controller.stop();
+        const intent = await processVoiceIntake(audioBlob, transcript || undefined);
         setVoiceIntent(intent);
+      } catch (err) {
+        console.error('Voice intake error:', err);
+      } finally {
         setIsProcessingVoice(false);
-      };
-      mediaRecorderRef.current.stop();
+      }
     } else {
-      const intent = await processVoiceIntake(null, 'I want to book a Cardiology appointment with Dr. Sharma tomorrow.');
-      setVoiceIntent(intent);
       setIsProcessingVoice(false);
     }
   };

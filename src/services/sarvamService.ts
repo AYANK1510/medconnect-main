@@ -91,7 +91,7 @@ export async function transcribeAudio(
   const { apiKey, isConfigured } = getSarvamCredentials();
 
   if (!isConfigured) {
-    console.error('SARVAM_NOT_CONFIGURED: Missing SARVAM_API_KEY in .env (server-side env var).');
+    console.warn('SARVAM_NOT_CONFIGURED: Missing SARVAM_API_KEY in .env');
   }
 
   // ── Real Sarvam API Call ─────────────────────────────────────────────────
@@ -99,18 +99,30 @@ export async function transcribeAudio(
     try {
       const formData = new FormData();
 
-      // Normalize audio input to a Blob
+      // Normalize audio input to a Blob and determine filename extension
+      let blob: Blob;
+      let ext = 'webm';
+
       if (audioBlob instanceof Blob) {
-        formData.append('file', audioBlob, 'audio.wav');
+        blob = audioBlob;
+        if (blob.type.includes('wav')) ext = 'wav';
+        else if (blob.type.includes('ogg')) ext = 'ogg';
+        else if (blob.type.includes('mp4')) ext = 'mp4';
+        else if (blob.type.includes('webm')) ext = 'webm';
       } else if (audioBlob instanceof ArrayBuffer) {
-        formData.append('file', new Blob([audioBlob], { type: 'audio/wav' }), 'audio.wav');
-      } else if (typeof audioBlob === 'string') {
-        formData.append('file', new Blob([audioBlob], { type: 'audio/wav' }), 'audio.wav');
+        blob = new Blob([audioBlob], { type: 'audio/wav' });
+        ext = 'wav';
+      } else {
+        blob = new Blob([audioBlob], { type: 'audio/wav' });
+        ext = 'wav';
       }
+
+      formData.append('file', blob, `audio.${ext}`);
 
       const languageCode = LANGUAGE_CODE_MAP[language] || 'hi-IN';
       formData.append('language_code', languageCode);
-      formData.append('model', 'saaras:v1');
+      formData.append('model', 'saarika:v2.5');
+      formData.append('prompt', 'Dr. Rajesh Sharma, Dr. Priya Ananth, Dr. Amit Patel, Dr. Vikram Malhotra, Dr. Sunita Rao, Dr. Ananya Roy, Cardiology, Orthopedics, Neurology, General Medicine, Pediatrics, Dermatology, OPD, appointment, token MED-101');
 
       const response = await fetch('https://api.sarvam.ai/speech-to-text', {
         method: 'POST',
@@ -120,7 +132,7 @@ export async function transcribeAudio(
 
       if (response.ok) {
         const data = await response.json();
-        const transcript: string = data.transcript || data.text || '';
+        const transcript: string = (data.transcript || data.text || '').trim();
 
         if (transcript) {
           return {
@@ -132,8 +144,14 @@ export async function transcribeAudio(
           };
         }
 
-        // API responded 200 but returned no transcript text
-        console.warn('SARVAM_EMPTY_TRANSCRIPT: API returned 200 but no transcript. Falling back to demo.');
+        console.warn('SARVAM_EMPTY_TRANSCRIPT: API returned 200 with empty transcript.');
+        return {
+          text: '',
+          detectedLang: languageCode,
+          confidence: 0,
+          isConfigured: true,
+          status: 'EMPTY_SPEECH',
+        };
       } else {
         const errBody = await response.text().catch(() => '(no body)');
         console.error(`SARVAM_API_ERROR: HTTP ${response.status} ${response.statusText} — ${errBody}`);
@@ -143,17 +161,25 @@ export async function transcribeAudio(
     }
   }
 
-  // ── Demo / Fallback Simulation ────────────────────────────────────────────
-  await new Promise<void>((res) => setTimeout(res, 200));
-
-  const list = MOCK_TRANSCRIPTIONS[language] || MOCK_TRANSCRIPTIONS['Hinglish'];
-  const text = list[Math.floor(Math.random() * list.length)];
+  // ── Fallback: Only return mock phrases if no audio blob was provided (demo text mode) ──
+  if (!audioBlob) {
+    const list = MOCK_TRANSCRIPTIONS[language] || MOCK_TRANSCRIPTIONS['Hinglish'];
+    const text = list[Math.floor(Math.random() * list.length)];
+    return {
+      text,
+      detectedLang: language,
+      confidence: isConfigured ? 0.88 : 0.82,
+      isConfigured,
+      status: 'DEMO_FALLBACK',
+    };
+  }
 
   return {
-    text,
+    text: '',
     detectedLang: language,
-    confidence: isConfigured ? 0.88 : 0.82,
+    confidence: 0,
     isConfigured,
-    status: isConfigured ? 'SARVAM_FALLBACK_DEMO' : 'SARVAM_NOT_CONFIGURED',
+    status: 'NO_SPEECH_CAPTURED',
   };
 }
+

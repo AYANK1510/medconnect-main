@@ -35,7 +35,7 @@ export async function processVoiceIntake(
 ): Promise<StructuredIntent> {
   const res = await processReceptionistTurn({
     channel: audioBlob ? 'mic' : 'text',
-    text: audioBlob ? undefined : (textPrompt || ''),
+    text: textPrompt?.trim() || undefined,
     audioBlob: audioBlob ?? undefined,
     language,
     hospitalId,
