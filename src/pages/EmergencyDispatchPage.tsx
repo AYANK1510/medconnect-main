@@ -4,7 +4,9 @@ import { fetchDispatches } from '../services/dispatchService';
 import type { EmergencyRequest, Dispatch } from '../types/database.types';
 import { dbEngine } from '../lib/dbEngine';
 import { Link } from 'react-router-dom';
-import { Truck, ShieldCheck, CheckCircle2, QrCode, AlertTriangle } from 'lucide-react';
+import { Truck, ShieldCheck, CheckCircle2, QrCode, AlertTriangle, Loader2 } from 'lucide-react';
+import { Badge } from '../components/ui/Badge';
+import { EmptyState } from '../components/ui/EmptyState';
 
 export const EmergencyDispatchPage: React.FC = () => {
   const [requests, setRequests] = useState<EmergencyRequest[]>([]);
@@ -27,74 +29,92 @@ export const EmergencyDispatchPage: React.FC = () => {
   const handleAccept = async (requestId: string) => {
     setProcessingId(requestId);
     try {
-      // Execute atomic database reservation procedure
-      await acceptEmergencyRequest(requestId, 'hosp-102'); // Responding as St. Jude Memorial
+      await acceptEmergencyRequest(requestId, 'hosp-102');
       await loadData();
-    } catch (err: any) {
-      alert(err.message || 'Inventory transaction failed.');
+    } catch (err: unknown) {
+      const e = err as Error;
+      alert(e.message || 'Inventory transaction failed.');
     } finally {
       setProcessingId(null);
     }
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8 font-sans">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
         <div>
-          <span className="text-xs font-mono font-bold text-teal-400 uppercase tracking-wider">
+          <span className="text-[10px] sm:text-xs font-bold text-blue-600 uppercase tracking-wider block">
             REGIONAL EMERGENCY DISPATCH & INVENTORY ALLOCATION
           </span>
-          <h1 className="text-2xl font-extrabold text-white">Emergency Supply Dispatch Portal</h1>
-          <p className="text-xs text-slate-400">
+          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight mt-0.5">
+            Emergency Supply Dispatch Portal
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 font-normal mt-0.5">
             Accept regional SOS requests, reserve inventory atomically, and issue QR dispatch passes.
           </p>
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-12 gap-8">
-        
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
         {/* Incoming Emergency Requests to Accept */}
-        <div className="lg:col-span-6 bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <h2 className="text-base font-bold text-white flex items-center space-x-2">
-              <AlertTriangle className="w-5 h-5 text-amber-400" />
+        <div className="lg:col-span-6 bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 space-y-4 shadow-card">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center space-x-2">
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
               <span>Incoming Regional SOS Requests</span>
             </h2>
-            <span className="text-xs font-mono text-amber-400">{requests.length} Pending</span>
+            <Badge variant="warning" size="sm" dot>
+              {requests.length} Pending
+            </Badge>
           </div>
 
           {requests.length === 0 ? (
-            <div className="py-12 text-center text-xs text-slate-500">
-              No pending emergency supply requests targeting this facility.
-            </div>
+            <EmptyState
+              title="No pending SOS requests"
+              description="No emergency supply requests targeting this facility are currently pending."
+            />
           ) : (
             <div className="space-y-3">
               {requests.map(req => (
-                <div key={req.id} className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
+                <div key={req.id} className="p-4 bg-slate-50/70 border border-slate-200 rounded-xl space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-xs text-slate-400 font-mono">REQUESTING FACILITY</span>
-                      <div className="text-sm font-bold text-white">Metro City General Hospital</div>
+                      <span className="text-[10px] text-slate-500 font-mono block">REQUESTING FACILITY</span>
+                      <div className="text-xs sm:text-sm font-bold text-slate-900">Metro City General Hospital</div>
                     </div>
-                    <span className="px-2.5 py-1 text-[10px] font-mono font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30 rounded-full">
+                    <Badge variant="emergency" dot pulseDot size="sm">
                       CRITICAL SOS
-                    </span>
+                    </Badge>
                   </div>
 
-                  <div className="p-3 bg-slate-900 border border-slate-800 rounded-lg text-xs space-y-1">
-                    <div className="text-slate-300">Resource: <span className="font-bold text-white uppercase">{req.resource_type.replace('_', ' ')}</span></div>
-                    <div className="text-slate-300">Quantity Needed: <span className="font-bold text-teal-400 font-mono">{req.quantity} Units</span></div>
-                    <div className="text-slate-400 text-[11px] mt-1">{req.notes}</div>
+                  <div className="p-3 bg-white border border-slate-200 rounded-lg text-xs space-y-1">
+                    <div className="text-slate-600">
+                      Resource: <span className="font-bold text-slate-900 uppercase">{req.resource_type.replace('_', ' ')}</span>
+                    </div>
+                    <div className="text-slate-600">
+                      Quantity Needed: <span className="font-bold text-blue-600 font-mono">{req.quantity} Units</span>
+                    </div>
+                    {req.notes && <div className="text-slate-500 text-[11px] mt-1">{req.notes}</div>}
                   </div>
 
                   <button
+                    type="button"
                     onClick={() => handleAccept(req.id)}
                     disabled={processingId === req.id}
-                    className="w-full py-2.5 bg-emerald-500 text-slate-950 font-bold rounded-lg hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/20 flex items-center justify-center space-x-2 text-xs"
+                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold rounded-xl transition-all shadow-xs flex items-center justify-center space-x-2 text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>{processingId === req.id ? 'Reserving Inventory & Creating Dispatch...' : 'Accept Request & Reserve Inventory'}</span>
+                    {processingId === req.id ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Reserving Inventory & Creating Dispatch...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Accept Request & Reserve Inventory</span>
+                      </>
+                    )}
                   </button>
                 </div>
               ))}
@@ -103,46 +123,49 @@ export const EmergencyDispatchPage: React.FC = () => {
         </div>
 
         {/* Active Dispatches and QR Pass Generator */}
-        <div className="lg:col-span-6 bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <h2 className="text-base font-bold text-white flex items-center space-x-2">
-              <Truck className="w-5 h-5 text-teal-400" />
+        <div className="lg:col-span-6 bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 space-y-4 shadow-card">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center space-x-2">
+              <Truck className="w-4 h-4 text-blue-600" />
               <span>Active Dispatches & QR Passes</span>
             </h2>
-            <span className="text-xs font-mono text-teal-400">{dispatches.length} Total</span>
+            <span className="text-xs font-mono text-slate-500 font-medium">{dispatches.length} Total</span>
           </div>
 
           {dispatches.length === 0 ? (
-            <div className="py-12 text-center text-xs text-slate-500">
-              No dispatches currently generated.
-            </div>
+            <EmptyState
+              title="No active dispatches"
+              description="No active supply dispatches currently generated."
+            />
           ) : (
             <div className="space-y-3">
               {dispatches.map(disp => (
-                <div key={disp.id} className="p-4 bg-slate-950 border border-emerald-500/30 rounded-xl space-y-3">
+                <div key={disp.id} className="p-4 bg-slate-50/70 border border-slate-200 rounded-xl space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                      <span className="font-mono text-xs font-bold text-emerald-300">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      <span className="font-mono text-xs font-bold text-slate-900">
                         {disp.verification_code}
                       </span>
                     </div>
-                    <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-full uppercase">
+                    <Badge variant="green" size="sm" dot>
                       {disp.status}
+                    </Badge>
+                  </div>
+
+                  <div className="text-xs text-slate-600 space-y-1 font-mono">
+                    <div>Resource: <span className="text-slate-900 font-semibold uppercase">{disp.resource_type.replace('_', ' ')}</span> ({disp.quantity} Units)</div>
+                    <div>Destination: <span className="text-slate-700">Metro City General</span></div>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs">
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      Created: {new Date(disp.created_at).toLocaleTimeString()}
                     </span>
-                  </div>
-
-                  <div className="text-xs text-slate-300 space-y-1 font-mono">
-                    <div>Resource: <span className="text-white uppercase">{disp.resource_type.replace('_', ' ')}</span> ({disp.quantity} Units)</div>
-                    <div>Destination: <span className="text-slate-200">Metro City General</span></div>
-                  </div>
-
-                  <div className="pt-2 border-t border-slate-900 flex justify-between items-center text-xs">
-                    <span className="text-[10px] text-slate-500 font-mono">Created: {new Date(disp.created_at).toLocaleTimeString()}</span>
                     <Link
                       to={`/dispatch/verify/${disp.verification_code}`}
                       target="_blank"
-                      className="px-3 py-1.5 bg-teal-400/10 border border-teal-500/30 text-teal-300 hover:bg-teal-400 hover:text-slate-950 font-semibold rounded-lg transition-colors flex items-center space-x-1"
+                      className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/80 font-semibold rounded-xl transition-colors flex items-center space-x-1 cursor-pointer"
                     >
                       <QrCode className="w-3.5 h-3.5" />
                       <span>View Verified QR Pass</span>
@@ -153,8 +176,9 @@ export const EmergencyDispatchPage: React.FC = () => {
             </div>
           )}
         </div>
-
       </div>
     </div>
   );
 };
+
+export default EmergencyDispatchPage;

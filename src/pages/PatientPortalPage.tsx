@@ -338,7 +338,15 @@ export const INITIAL_MEDICAL_RECORDS: MedicalRecordItem[] = [
   }
 ];
 
-export const PatientPortalPage: React.FC = () => {
+export interface PatientPortalPageProps {
+  subTab?: string;
+  onSubTabChange?: (tab: string) => void;
+}
+
+export const PatientPortalPage: React.FC<PatientPortalPageProps> = ({
+  subTab,
+  onSubTabChange,
+}) => {
   const { profile } = useAuth();
   
   const [activeTab, setActiveTab] = useState<PatientTab>('dashboard');
@@ -381,6 +389,24 @@ export const PatientPortalPage: React.FC = () => {
 
   // Medical Records Tab & Repository State
   const [medicalRecordTab, setMedicalRecordTab] = useState<MedicalCategoryTab>('all');
+
+  // Synchronize incoming subTab from PatientShell
+  useEffect(() => {
+    if (!subTab) return;
+    if (subTab === 'overview' || subTab === 'dashboard') {
+      setActiveTab('dashboard');
+    } else if (subTab === 'book') {
+      setActiveTab('book');
+    } else if (subTab === 'queue' || subTab === 'live_queue') {
+      setActiveTab('live_queue');
+    } else if (subTab === 'prescriptions') {
+      setActiveTab('medical_records');
+      setMedicalRecordTab('prescriptions');
+    } else if (subTab === 'history' || subTab === 'records' || subTab === 'medical_records') {
+      setActiveTab('medical_records');
+      setMedicalRecordTab('all');
+    }
+  }, [subTab]);
   const [recordSearch, setRecordSearch] = useState('');
   const [medicalRecords, setMedicalRecords] = useState<MedicalRecordItem[]>(INITIAL_MEDICAL_RECORDS);
   const [selectedRecordForDetail, setSelectedRecordForDetail] = useState<MedicalRecordItem | null>(null);
@@ -503,9 +529,7 @@ export const PatientPortalPage: React.FC = () => {
         if (isCancelled) return;
         if (slots.length > 0) {
           setAvailableSlots(slots);
-          if (!selectedSlot || !slots.includes(selectedSlot)) {
-            setSelectedSlot(slots[0]);
-          }
+          setSelectedSlot(prev => (!prev || !slots.includes(prev) ? slots[0] : prev));
         } else {
           // If 0 slots for selected date (e.g. today after clinic hours or off-day), check upcoming days
           let nextWorkingDate = '';
@@ -979,17 +1003,22 @@ CONFIDENTIAL MEDICAL DOCUMENT - PROTECTED UNDER ROW LEVEL SECURITY (RLS)
     }, 450);
   };
 
+  const handleTabClick = (tab: PatientTab, subTabName: string) => {
+    setActiveTab(tab);
+    onSubTabChange?.(subTabName);
+  };
+
   return (
     <div className="space-y-8 animate-fadeIn">
       
       {/* Patient Sub-Navigation Pills */}
-      <div className="flex items-center space-x-2 border-b border-slate-800 pb-3 overflow-x-auto">
+      <div className="flex items-center space-x-2 border-b border-slate-200/80 pb-3 overflow-x-auto">
         <button
-          onClick={() => setActiveTab('dashboard')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap ${
+          onClick={() => handleTabClick('dashboard', 'overview')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap cursor-pointer active:scale-95 ${
             activeTab === 'dashboard'
-              ? 'bg-teal-500/20 text-teal-300 border border-teal-500/40 shadow-lg shadow-teal-500/10'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
           <Clock className="w-4 h-4" />
@@ -997,11 +1026,11 @@ CONFIDENTIAL MEDICAL DOCUMENT - PROTECTED UNDER ROW LEVEL SECURITY (RLS)
         </button>
 
         <button
-          onClick={() => setActiveTab('book')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap ${
+          onClick={() => handleTabClick('book', 'book')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap cursor-pointer active:scale-95 ${
             activeTab === 'book'
-              ? 'bg-teal-500/20 text-teal-300 border border-teal-500/40 shadow-lg shadow-teal-500/10'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
           <Calendar className="w-4 h-4" />
@@ -1009,11 +1038,11 @@ CONFIDENTIAL MEDICAL DOCUMENT - PROTECTED UNDER ROW LEVEL SECURITY (RLS)
         </button>
 
         <button
-          onClick={() => setActiveTab('my_appointments')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap ${
+          onClick={() => handleTabClick('my_appointments', 'overview')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap cursor-pointer active:scale-95 ${
             activeTab === 'my_appointments'
-              ? 'bg-teal-500/20 text-teal-300 border border-teal-500/40 shadow-lg shadow-teal-500/10'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
           <Stethoscope className="w-4 h-4" />
@@ -1021,11 +1050,11 @@ CONFIDENTIAL MEDICAL DOCUMENT - PROTECTED UNDER ROW LEVEL SECURITY (RLS)
         </button>
 
         <button
-          onClick={() => setActiveTab('live_queue')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap ${
+          onClick={() => handleTabClick('live_queue', 'queue')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap cursor-pointer active:scale-95 ${
             activeTab === 'live_queue'
-              ? 'bg-teal-500/20 text-teal-300 border border-teal-500/40 shadow-lg shadow-teal-500/10'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
           <ListOrdered className="w-4 h-4" />
@@ -1033,11 +1062,11 @@ CONFIDENTIAL MEDICAL DOCUMENT - PROTECTED UNDER ROW LEVEL SECURITY (RLS)
         </button>
 
         <button
-          onClick={() => setActiveTab('medical_records')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap ${
+          onClick={() => handleTabClick('medical_records', 'history')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap cursor-pointer active:scale-95 ${
             activeTab === 'medical_records'
-              ? 'bg-teal-500/20 text-teal-300 border border-teal-500/40 shadow-lg shadow-teal-500/10'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
           <FileText className="w-4 h-4" />
@@ -1045,11 +1074,11 @@ CONFIDENTIAL MEDICAL DOCUMENT - PROTECTED UNDER ROW LEVEL SECURITY (RLS)
         </button>
 
         <button
-          onClick={() => setActiveTab('profile')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap ${
+          onClick={() => handleTabClick('profile', 'overview')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap cursor-pointer active:scale-95 ${
             activeTab === 'profile'
-              ? 'bg-teal-500/20 text-teal-300 border border-teal-500/40 shadow-lg shadow-teal-500/10'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
           <User className="w-4 h-4" />
@@ -1064,29 +1093,33 @@ CONFIDENTIAL MEDICAL DOCUMENT - PROTECTED UNDER ROW LEVEL SECURITY (RLS)
         <div className="space-y-8">
           
           {/* Welcome Banner */}
-          <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border border-slate-800 shadow-2xl flex flex-wrap items-center justify-between gap-6">
+          <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/80 shadow-card flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-2 max-w-xl">
-              <span className="text-xs font-mono font-bold text-teal-400 uppercase tracking-wider">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/60 text-[11px] font-extrabold text-blue-700 uppercase tracking-wider">
+                <Sparkles className="w-3 h-3 text-blue-600" />
                 WELCOME TO MEDCONNECT PULSE
               </span>
-              <h1 className="text-2xl md:text-3xl font-black text-white">Good Morning, {patientName}!</h1>
-              <p className="text-xs text-slate-300 leading-relaxed">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                Good Morning, {patientName}!
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
                 Your health matters. We're here to make your healthcare journey simpler and faster.
               </p>
             </div>
 
             {/* Notification Card Right */}
-            <div className="p-4 rounded-2xl bg-teal-500/10 border border-teal-500/30 max-w-xs space-y-2">
-              <div className="flex items-center space-x-2 text-teal-300 font-bold text-xs">
-                <Sparkles className="w-4 h-4 text-teal-400" />
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-md max-w-sm space-y-2 shrink-0">
+              <div className="flex items-center space-x-2 font-bold text-xs">
+                <Sparkles className="w-4 h-4 text-white" />
                 <span>Stay on Track</span>
               </div>
-              <p className="text-[11px] text-slate-300">
+              <p className="text-[11px] text-blue-100 leading-relaxed">
                 Regular check-ups help you stay healthier for a brighter tomorrow.
               </p>
               <button
+                type="button"
                 onClick={() => setActiveTab('book')}
-                className="text-xs font-bold text-teal-400 hover:text-teal-300 flex items-center space-x-1 pt-1"
+                className="text-xs font-bold text-blue-700 bg-white hover:bg-blue-50 px-3 py-1.5 rounded-lg flex items-center space-x-1 pt-1 transition shadow-xs cursor-pointer active:scale-95"
               >
                 <span>Book an Appointment</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -1095,20 +1128,20 @@ CONFIDENTIAL MEDICAL DOCUMENT - PROTECTED UNDER ROW LEVEL SECURITY (RLS)
           </div>
 
           {/* Quick Access Cards */}
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             
             <div
               onClick={() => setIsVoiceOpen(true)}
-              className="p-6 rounded-3xl bg-slate-900 border border-slate-800 hover:border-teal-500/40 transition-all cursor-pointer group space-y-4"
+              className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-card hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group space-y-4"
             >
-              <div className="w-12 h-12 rounded-2xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 group-hover:scale-105 transition-transform">
                 <Mic className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-bold text-white text-base">Talk to AI Receptionist</h3>
-                <p className="text-xs text-slate-400 mt-1">Multilingual voice assistant to book appointments instantly.</p>
+                <h3 className="font-bold text-slate-900 text-base group-hover:text-blue-600 transition-colors">Talk to AI Receptionist</h3>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">Multilingual voice assistant to book appointments instantly.</p>
               </div>
-              <div className="text-xs font-bold text-teal-400 flex items-center space-x-1">
+              <div className="text-xs font-bold text-blue-600 flex items-center space-x-1 group-hover:translate-x-1 transition-transform">
                 <span>Start Voice Intake</span>
                 <ChevronRight className="w-4 h-4" />
               </div>
@@ -1116,16 +1149,16 @@ CONFIDENTIAL MEDICAL DOCUMENT - PROTECTED UNDER ROW LEVEL SECURITY (RLS)
 
             <div
               onClick={() => setActiveTab('book')}
-              className="p-6 rounded-3xl bg-slate-900 border border-slate-800 hover:border-teal-500/40 transition-all cursor-pointer group space-y-4"
+              className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-card hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer group space-y-4"
             >
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 group-hover:scale-105 transition-transform">
                 <Calendar className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-bold text-white text-base">Book Appointment</h3>
-                <p className="text-xs text-slate-400 mt-1">Select hospital, doctor, and date in 4 easy steps.</p>
+                <h3 className="font-bold text-slate-900 text-base group-hover:text-emerald-600 transition-colors">Book Appointment</h3>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">Select hospital, doctor, and date in 4 easy steps.</p>
               </div>
-              <div className="text-xs font-bold text-emerald-400 flex items-center space-x-1">
+              <div className="text-xs font-bold text-emerald-600 flex items-center space-x-1 group-hover:translate-x-1 transition-transform">
                 <span>Start Booking</span>
                 <ChevronRight className="w-4 h-4" />
               </div>
@@ -1133,16 +1166,16 @@ CONFIDENTIAL MEDICAL DOCUMENT - PROTECTED UNDER ROW LEVEL SECURITY (RLS)
 
             <div
               onClick={() => setActiveTab('medical_records')}
-              className="p-6 rounded-3xl bg-slate-900 border border-slate-800 hover:border-teal-500/40 transition-all cursor-pointer group space-y-4"
+              className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-card hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group space-y-4"
             >
-              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 group-hover:scale-105 transition-transform">
                 <FileText className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-bold text-white text-base">View Medical Records</h3>
-                <p className="text-xs text-slate-400 mt-1">Access lab reports, prescriptions & discharge notes.</p>
+                <h3 className="font-bold text-slate-900 text-base group-hover:text-blue-600 transition-colors">View Medical Records</h3>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">Access lab reports, prescriptions &amp; discharge notes.</p>
               </div>
-              <div className="text-xs font-bold text-blue-400 flex items-center space-x-1">
+              <div className="text-xs font-bold text-blue-600 flex items-center space-x-1 group-hover:translate-x-1 transition-transform">
                 <span>View Records</span>
                 <ChevronRight className="w-4 h-4" />
               </div>
@@ -1151,114 +1184,117 @@ CONFIDENTIAL MEDICAL DOCUMENT - PROTECTED UNDER ROW LEVEL SECURITY (RLS)
           </div>
 
           {/* Upcoming Appointment & Live Queue Widget */}
-          <div className="grid lg:grid-cols-12 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
             
             {/* Upcoming Appointment Card */}
-            <div className="lg:col-span-7 p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-5">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 className="font-bold text-white text-base flex items-center space-x-2">
-                  <Stethoscope className="w-5 h-5 text-teal-400" />
+            <div className="lg:col-span-7 p-6 rounded-2xl bg-white border border-slate-200/80 shadow-card space-y-5">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="font-bold text-slate-900 text-base flex items-center space-x-2">
+                  <Stethoscope className="w-5 h-5 text-blue-600" />
                   <span>Upcoming Appointment</span>
                 </h3>
-                <span className="px-2.5 py-0.5 text-[10px] font-mono font-bold bg-teal-500/10 text-teal-300 rounded-full border border-teal-500/30">
+                <span className="px-2.5 py-0.5 text-[10px] font-mono font-bold bg-blue-50 text-blue-700 rounded-full border border-blue-200">
                   Confirmed
                 </span>
               </div>
 
               {myAppointments.length > 0 ? (
                 <div className="space-y-4">
-                  <div className="grid sm:grid-cols-2 gap-4 text-xs">
-                    <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
                       <div className="text-slate-400 text-[11px]">Doctor</div>
-                      <div className="font-bold text-white text-sm">
+                      <div className="font-bold text-slate-900 text-sm">
                         {doctors.find(d => d.id === myAppointments[0]?.doctor_id)?.name || 'Dr. Rajesh Sharma'}
                       </div>
-                      <div className="text-teal-400">
+                      <div className="text-blue-600 font-medium">
                         {doctors.find(d => d.id === myAppointments[0]?.doctor_id)?.specialization || 'Cardiology Specialist'}
                       </div>
                     </div>
 
-                    <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
-                      <div className="text-slate-400 text-[11px]">Hospital & Location</div>
-                      <div className="font-bold text-white text-sm">Metro City General</div>
-                      <div className="text-slate-400">Rohini, New Delhi</div>
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+                      <div className="text-slate-400 text-[11px]">Hospital &amp; Location</div>
+                      <div className="font-bold text-slate-900 text-sm">Metro City General</div>
+                      <div className="text-slate-500">Rohini, New Delhi</div>
                     </div>
 
-                    <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
-                      <div className="text-slate-400 text-[11px]">Date & Time</div>
-                      <div className="font-bold text-white text-sm">{myAppointments[0]?.appointment_date}</div>
-                      <div className="text-teal-300 font-mono font-bold">{myAppointments[0]?.appointment_time}</div>
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+                      <div className="text-slate-400 text-[11px]">Date &amp; Time</div>
+                      <div className="font-bold text-slate-900 text-sm">{myAppointments[0]?.appointment_date}</div>
+                      <div className="text-blue-700 font-mono font-bold">{myAppointments[0]?.appointment_time}</div>
                     </div>
 
-                    <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
                       <div className="text-slate-400 text-[11px]">OPD Token</div>
-                      <div className="font-black text-emerald-400 font-mono text-base">
+                      <div className="font-black text-blue-600 font-mono text-base">
                         #{queueTokens.find(t => t.appointment_id === myAppointments[0]?.id)?.token_number || myAppointments[0]?.appointment_number || 'MED-4029'}
                       </div>
-                      <div className="text-[10px] text-slate-500">Live Status Active</div>
+                      <div className="text-[10px] text-emerald-600 font-semibold">Live Status Active</div>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-end space-x-3 pt-2">
                     <button
+                      type="button"
                       onClick={() => setSelectedApptForDetails(myAppointments[0])}
-                      className="px-3.5 py-1.5 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors text-xs font-semibold cursor-pointer"
+                      className="px-3.5 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors text-xs font-semibold cursor-pointer active:scale-95"
                     >
                       View Details
                     </button>
                     <button
+                      type="button"
                       onClick={() => setActiveTab('book')}
-                      className="px-3.5 py-1.5 rounded-xl bg-teal-500/20 text-teal-300 border border-teal-500/40 text-xs font-semibold hover:bg-teal-500/30 transition-colors cursor-pointer"
+                      className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs active:scale-95"
                     >
                       Reschedule
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-8 text-slate-500 text-xs">
+                <div className="text-center py-8 text-slate-400 text-xs">
                   No upcoming appointments. Book your first consultation above!
                 </div>
               )}
             </div>
 
             {/* Live Queue Status Card */}
-            <div className="lg:col-span-5 p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-5">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 className="font-bold text-white text-base flex items-center space-x-2">
-                  <ListOrdered className="w-5 h-5 text-emerald-400" />
+            <div className="lg:col-span-5 p-6 rounded-2xl bg-white border border-slate-200/80 shadow-card space-y-5">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="font-bold text-slate-900 text-base flex items-center space-x-2">
+                  <ListOrdered className="w-5 h-5 text-blue-600" />
                   <span>Live Queue Status</span>
                 </h3>
-                <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-full flex items-center space-x-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                <span className="px-2.5 py-0.5 text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full flex items-center space-x-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
                   <span>LIVE</span>
                 </span>
               </div>
 
               <div className="space-y-3 text-xs">
-                <div className="p-3 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between">
-                  <span className="text-slate-400">Your Token</span>
-                  <span className="font-mono font-black text-teal-300 text-lg">#MED-4029</span>
+                <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between">
+                  <span className="text-slate-500 font-medium">Your Token</span>
+                  <span className="font-mono font-black text-blue-700 text-lg">#MED-4029</span>
                 </div>
 
-                <div className="p-3 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between">
-                  <span className="text-slate-400">Currently Serving</span>
-                  <span className="font-mono font-black text-emerald-400 text-lg">#MED-4026</span>
+                <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between">
+                  <span className="text-slate-500 font-medium">Currently Serving</span>
+                  <span className="font-mono font-black text-emerald-600 text-lg">#MED-4026</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 text-center">
-                  <div className="p-3 bg-slate-950 border border-slate-800 rounded-2xl">
-                    <div className="text-slate-400 text-[10px]">Patients Ahead</div>
-                    <div className="text-xl font-bold text-white font-mono mt-0.5">3</div>
+                  <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl">
+                    <div className="text-slate-400 text-[10px] font-medium">Patients Ahead</div>
+                    <div className="text-xl font-bold text-slate-900 font-mono mt-0.5">3</div>
                   </div>
-                  <div className="p-3 bg-slate-950 border border-slate-800 rounded-2xl">
-                    <div className="text-slate-400 text-[10px]">Est. Wait Time</div>
-                    <div className="text-xl font-bold text-emerald-400 font-mono mt-0.5">~15 Min</div>
+                  <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl">
+                    <div className="text-slate-400 text-[10px] font-medium">Est. Wait Time</div>
+                    <div className="text-xl font-bold text-emerald-600 font-mono mt-0.5">~15 Min</div>
                   </div>
                 </div>
 
                 <button
+                  type="button"
                   onClick={() => setActiveTab('live_queue')}
-                  className="w-full py-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-teal-300 font-bold rounded-xl text-xs transition-colors flex items-center justify-center space-x-2"
+                  className="w-full py-2.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 font-bold rounded-xl text-xs transition-colors flex items-center justify-center space-x-2 cursor-pointer active:scale-95 shadow-xs"
                 >
                   <span>Track Full Queue</span>
                   <ArrowRight className="w-3.5 h-3.5" />

@@ -367,60 +367,64 @@ export const SettingsPage: React.FC = () => {
   const currentLng = activeHospital?.longitude ?? (activeHospital as unknown as Record<string, number>).lng ?? 77.2090;
 
   return (
-    <div className="space-y-8 font-sans">
+    <div className="space-y-6 sm:space-y-8 font-sans">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
-        <div>
-          <span className="text-xs font-mono font-bold text-teal-400 uppercase tracking-wider">
-            SYSTEM CONFIGURATION & HOSPITAL LOCATION MANAGEMENT
-          </span>
-          <h1 className="text-2xl font-extrabold text-white">Platform Settings & Facility Location</h1>
-          <p className="text-xs text-slate-400">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-5">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/60 text-[11px] font-extrabold text-blue-700 uppercase tracking-wider">
+            <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+            SYSTEM CONFIGURATION &amp; LOCATION MANAGEMENT
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Platform Settings &amp; Facility Location
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500">
             Manage hospital physical coordinates, audit API integration health, and review active credentials.
           </p>
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
         
         {/* LEFT COLUMN: Profile & Hospital Registered Location */}
         <div className="lg:col-span-5 space-y-6">
           
           {/* Active Profile */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
-            <h3 className="text-sm font-bold text-white flex items-center space-x-2 border-b border-slate-800 pb-3">
-              <ShieldCheck className="w-4 h-4 text-teal-400" />
-              <span>Active User Profile & Permissions</span>
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 space-y-4 shadow-card">
+            <h3 className="text-sm font-bold text-slate-900 flex items-center space-x-2 border-b border-slate-100 pb-3">
+              <ShieldCheck className="w-4 h-4 text-blue-600" />
+              <span>Active User Profile &amp; Permissions</span>
             </h3>
 
             <div className="space-y-3 text-xs">
-              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
-                <span className="text-slate-400 block text-[10px] uppercase font-mono">User Full Name</span>
-                <span className="font-bold text-white text-sm">{profile?.full_name || 'Dr. Rajesh Sharma'}</span>
+              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80">
+                <span className="text-slate-400 block text-[10px] uppercase font-mono tracking-wider">User Full Name</span>
+                <span className="font-bold text-slate-900 text-sm">{profile?.full_name || 'Dr. Rajesh Sharma'}</span>
               </div>
 
-              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
-                <span className="text-slate-400 block text-[10px] uppercase font-mono">Operational Role</span>
-                <span className="font-mono font-bold text-teal-300 capitalize">{activeRole.replace('_', ' ')}</span>
+              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80">
+                <span className="text-slate-400 block text-[10px] uppercase font-mono tracking-wider">Operational Role</span>
+                <span className="font-mono font-bold text-blue-700 capitalize">{activeRole.replace('_', ' ')}</span>
               </div>
 
-              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
-                <span className="text-slate-400 block text-[10px] uppercase font-mono">Assigned Facility</span>
-                <span className="font-bold text-slate-200">{activeHospital?.name || 'City General Hospital'}</span>
+              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80">
+                <span className="text-slate-400 block text-[10px] uppercase font-mono tracking-wider">Assigned Facility</span>
+                <span className="font-bold text-slate-800">{activeHospital?.name || 'City General Hospital'}</span>
               </div>
             </div>
           </div>
 
           {/* HOSPITAL REGISTERED LOCATION PANEL */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-                <MapPin className="w-4 h-4 text-teal-400" />
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 space-y-4 shadow-card">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                <MapPin className="w-4 h-4 text-blue-600" />
                 <span>Hospital Physical GPS Location</span>
               </h3>
               <button
+                type="button"
                 onClick={() => setEditingLocation(!editingLocation)}
-                className="px-3 py-1.5 bg-teal-500/10 border border-teal-500/30 text-teal-300 font-bold text-[11px] rounded-lg hover:bg-teal-500/20 flex items-center space-x-1.5 transition cursor-pointer shadow-sm"
+                className="px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 font-bold text-[11px] rounded-lg flex items-center space-x-1.5 transition cursor-pointer shadow-xs active:scale-95"
               >
                 <Edit3 className="w-3.5 h-3.5" />
                 <span>{editingLocation ? 'Cancel' : 'Update Location'}</span>
@@ -428,14 +432,14 @@ export const SettingsPage: React.FC = () => {
             </div>
 
             {locationSuccess && (
-              <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-400 flex items-center space-x-2">
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-700 flex items-center space-x-2">
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
                 <span>{locationSuccess}</span>
               </div>
             )}
 
             {locationError && (
-              <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-400 flex items-center space-x-2">
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center space-x-2">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
                 <span>{locationError}</span>
               </div>
@@ -444,54 +448,55 @@ export const SettingsPage: React.FC = () => {
             {/* Readonly View */}
             {!editingLocation && (
               <div className="space-y-4 text-xs">
-                <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-3 shadow-inner">
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-900">
-                    <span className="text-slate-400 font-semibold flex items-center space-x-1.5">
-                      <Building2 className="w-3.5 h-3.5 text-teal-400" />
-                      <span>Registered Facility</span>
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                    <span className="text-slate-500 font-semibold flex items-center space-x-1.5">
+                      <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Facility Name</span>
                     </span>
-                    <span className="font-extrabold text-white text-sm">{activeHospital?.name || facilityName}</span>
+                    <span className="font-bold text-slate-900">{activeHospital?.name || facilityName}</span>
                   </div>
-                  <div className="flex items-start justify-between gap-4">
-                    <span className="text-slate-400 font-semibold shrink-0 flex items-center space-x-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-teal-400" />
+
+                  <div className="flex items-start justify-between pb-2 border-b border-slate-200 gap-4">
+                    <span className="text-slate-500 font-semibold flex items-center space-x-1.5 shrink-0">
+                      <MapPin className="w-3.5 h-3.5 text-blue-600" />
                       <span>Street Address</span>
                     </span>
-                    <span className="text-slate-200 font-medium text-right">{activeHospital?.address || streetAddress}</span>
+                    <span className="text-slate-700 font-medium text-right">{activeHospital?.address || streetAddress}</span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3.5 bg-slate-950 rounded-2xl border border-slate-800 space-y-1">
+                  <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
                     <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Latitude</span>
-                    <span className="font-mono text-emerald-400 font-extrabold text-base tracking-wide block">{currentLat}</span>
+                    <span className="font-mono text-blue-700 font-extrabold text-base tracking-wide block">{currentLat}</span>
                     <span className="text-[10px] text-slate-500">North / South Anchor</span>
                   </div>
-                  <div className="p-3.5 bg-slate-950 rounded-2xl border border-slate-800 space-y-1">
+                  <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
                     <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Longitude</span>
-                    <span className="font-mono text-emerald-400 font-extrabold text-base tracking-wide block">{currentLng}</span>
+                    <span className="font-mono text-blue-700 font-extrabold text-base tracking-wide block">{currentLng}</span>
                     <span className="text-[10px] text-slate-500">East / West Anchor</span>
                   </div>
                 </div>
 
                 {/* Map Link & Verification Badge */}
-                <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-teal-950/20 border border-teal-500/20 rounded-xl">
-                  <div className="flex items-center space-x-2 text-teal-300 text-[11px]">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-blue-50/60 border border-blue-200/70 rounded-xl">
+                  <div className="flex items-center space-x-2 text-blue-800 text-[11px]">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
                     <span className="font-semibold">Verified GPS Anchor: ±3m Precision</span>
                   </div>
                   <a
                     href={`https://www.google.com/maps?q=${currentLat},${currentLng}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center space-x-1 text-teal-400 hover:text-teal-300 text-[11px] font-semibold underline underline-offset-2"
+                    className="inline-flex items-center space-x-1 text-blue-600 hover:text-blue-800 text-[11px] font-bold underline underline-offset-2"
                   >
                     <span>Inspect on Google Maps</span>
                     <ExternalLink className="w-3 h-3" />
                   </a>
                 </div>
 
-                <p className="text-[11px] text-slate-400 italic">
+                <p className="text-[11px] text-slate-500 italic">
                   * ER staff emergency supply requests strictly bind to these registered coordinates.
                 </p>
               </div>
@@ -501,14 +506,14 @@ export const SettingsPage: React.FC = () => {
             {editingLocation && (
               <div className="space-y-4 pt-1 text-xs">
                 {/* Mode Selector Tabs */}
-                <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-950 rounded-xl border border-slate-800">
+                <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200">
                   <button
                     type="button"
                     onClick={() => setLocationMode('manual')}
                     className={`py-2 px-2.5 rounded-lg font-bold text-[11px] flex items-center justify-center space-x-1.5 transition ${
                       locationMode === 'manual'
-                        ? 'bg-teal-500 text-slate-950 shadow-md'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                     }`}
                   >
                     <MapPin className="w-3.5 h-3.5" />
@@ -519,8 +524,8 @@ export const SettingsPage: React.FC = () => {
                     onClick={() => setLocationMode('presets')}
                     className={`py-2 px-2.5 rounded-lg font-bold text-[11px] flex items-center justify-center space-x-1.5 transition ${
                       locationMode === 'presets'
-                        ? 'bg-teal-500 text-slate-950 shadow-md'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                     }`}
                   >
                     <Building2 className="w-3.5 h-3.5" />
@@ -531,8 +536,8 @@ export const SettingsPage: React.FC = () => {
                     onClick={() => setLocationMode('gps')}
                     className={`py-2 px-2.5 rounded-lg font-bold text-[11px] flex items-center justify-center space-x-1.5 transition ${
                       locationMode === 'gps'
-                        ? 'bg-teal-500 text-slate-950 shadow-md'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                     }`}
                   >
                     <Navigation className="w-3.5 h-3.5" />
@@ -545,24 +550,24 @@ export const SettingsPage: React.FC = () => {
                   <div className="space-y-3.5 animate-fadeIn">
                     {/* Search & Auto-Locate Bar */}
                     <div className="space-y-1">
-                      <label className="block text-[10px] font-mono text-slate-400 uppercase">
+                      <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider">
                         Quick Landmark / City Search
                       </label>
                       <form onSubmit={handleSearchLocation} className="flex gap-2">
                         <div className="relative flex-1">
-                          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
+                          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
                           <input
                             type="text"
                             value={searchLocationQuery}
                             onChange={(e) => setSearchLocationQuery(e.target.value)}
                             placeholder="Type area, city, hospital or landmark (e.g. Saket, Mumbai, Koramangala)..."
-                            className="w-full pl-8 pr-3 py-2 bg-slate-950 border border-slate-800 focus:border-teal-500 rounded-xl text-xs text-white placeholder:text-slate-600 outline-none"
+                            className="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 outline-none"
                           />
                         </div>
                         <button
                           type="submit"
                           disabled={isSearchingLocation}
-                          className="px-3 py-2 bg-teal-500/20 border border-teal-500/40 hover:bg-teal-500/30 text-teal-300 font-bold rounded-xl text-xs flex items-center space-x-1 shrink-0 cursor-pointer"
+                          className="px-3 py-2 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 font-bold rounded-xl text-xs flex items-center space-x-1 shrink-0 cursor-pointer shadow-xs active:scale-95"
                         >
                           {isSearchingLocation ? (
                             <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -576,7 +581,7 @@ export const SettingsPage: React.FC = () => {
 
                     {/* Facility Name Field */}
                     <div className="space-y-1">
-                      <label className="block text-[10px] font-mono text-slate-400 uppercase">
+                      <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider">
                         Hospital / Healthcare Facility Name
                       </label>
                       <input
@@ -584,30 +589,30 @@ export const SettingsPage: React.FC = () => {
                         value={facilityName}
                         onChange={(e) => setFacilityName(e.target.value)}
                         placeholder="e.g. Metro City General Hospital"
-                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:border-teal-500 outline-none font-semibold"
+                        className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-xs text-slate-800 outline-none font-semibold"
                       />
                     </div>
 
-                    {/* Physical Street Address Field */}
+                    {/* Street Address Field */}
                     <div className="space-y-1">
-                      <label className="block text-[10px] font-mono text-slate-400 uppercase">
-                        Physical Street Address & Locality
+                      <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider">
+                        Physical Postal / Street Address
                       </label>
-                      <input
-                        type="text"
+                      <textarea
+                        rows={2}
                         value={streetAddress}
                         onChange={(e) => setStreetAddress(e.target.value)}
-                        placeholder="e.g. 452 Healthcare Boulevard, Sector 4"
-                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:border-teal-500 outline-none"
+                        placeholder="e.g. 452 Healthcare Boulevard, Sector 4, New Delhi, Delhi 110001"
+                        className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-xs text-slate-800 outline-none resize-none"
                       />
                     </div>
 
-                    {/* Manual Precision Decimal Coordinates */}
+                    {/* Exact Coordinate Fields */}
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="text-[10px] font-mono text-slate-400 uppercase">Latitude (-90 to 90)</label>
-                          <span className="text-[9px] text-teal-400 font-mono">Dec Deg</span>
+                          <label className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Latitude (-90 to 90)</label>
+                          <span className="text-[9px] text-blue-600 font-mono">Dec Deg</span>
                         </div>
                         <input
                           type="number"
@@ -615,13 +620,13 @@ export const SettingsPage: React.FC = () => {
                           value={latitude}
                           onChange={(e) => setLatitude(e.target.value)}
                           placeholder="28.6139"
-                          className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-emerald-400 focus:border-teal-500 outline-none"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono text-blue-700 font-bold focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                         />
                       </div>
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="text-[10px] font-mono text-slate-400 uppercase">Longitude (-180 to 180)</label>
-                          <span className="text-[9px] text-teal-400 font-mono">Dec Deg</span>
+                          <label className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Longitude (-180 to 180)</label>
+                          <span className="text-[9px] text-blue-600 font-mono">Dec Deg</span>
                         </div>
                         <input
                           type="number"
@@ -629,7 +634,7 @@ export const SettingsPage: React.FC = () => {
                           value={longitude}
                           onChange={(e) => setLongitude(e.target.value)}
                           placeholder="77.2090"
-                          className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-emerald-400 focus:border-teal-500 outline-none"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono text-blue-700 font-bold focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                         />
                       </div>
                     </div>
@@ -639,25 +644,25 @@ export const SettingsPage: React.FC = () => {
                 {/* MODE 2: POPULAR CITY PRESETS */}
                 {locationMode === 'presets' && (
                   <div className="space-y-2.5 animate-fadeIn">
-                    <p className="text-slate-400 text-[11px]">
-                      Choose your healthcare regional zone to instantly auto-populate street address & GPS coordinates:
+                    <p className="text-slate-500 text-[11px]">
+                      Choose your healthcare regional zone to instantly auto-populate street address &amp; GPS coordinates:
                     </p>
                     <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                       {CITY_PRESETS.map((preset, idx) => (
                         <div
                           key={idx}
                           onClick={() => handleSelectPreset(preset)}
-                          className="p-3 bg-slate-950 border border-slate-800 hover:border-teal-500/60 rounded-xl flex items-center justify-between cursor-pointer transition group"
+                          className="p-3 bg-slate-50 border border-slate-200/80 hover:border-blue-300 hover:bg-blue-50/40 rounded-xl flex items-center justify-between cursor-pointer transition group"
                         >
                           <div className="space-y-0.5">
-                            <div className="font-bold text-white group-hover:text-teal-300 text-xs flex items-center space-x-1.5">
-                              <MapPin className="w-3 h-3 text-teal-400" />
+                            <div className="font-bold text-slate-900 group-hover:text-blue-700 text-xs flex items-center space-x-1.5">
+                              <MapPin className="w-3 h-3 text-blue-600" />
                               <span>{preset.name}</span>
                             </div>
-                            <div className="text-[11px] text-slate-400 truncate max-w-[260px]">{preset.address}</div>
+                            <div className="text-[11px] text-slate-500 truncate max-w-[260px]">{preset.address}</div>
                           </div>
                           <div className="text-right shrink-0">
-                            <span className="px-2 py-1 bg-teal-500/10 text-teal-300 text-[10px] font-mono rounded-lg border border-teal-500/20 group-hover:bg-teal-500 group-hover:text-slate-950 font-bold transition">
+                            <span className="px-2.5 py-1 bg-blue-50 text-blue-700 text-[10px] font-mono rounded-lg border border-blue-200 group-hover:bg-blue-600 group-hover:text-white font-bold transition">
                               Apply
                             </span>
                           </div>
@@ -669,11 +674,11 @@ export const SettingsPage: React.FC = () => {
 
                 {/* MODE 3: AUTO GPS */}
                 {locationMode === 'gps' && (
-                  <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-3 animate-fadeIn text-center">
-                    <Navigation className="w-8 h-8 text-teal-400 mx-auto animate-pulse" />
+                  <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3 animate-fadeIn text-center">
+                    <Navigation className="w-8 h-8 text-blue-600 mx-auto animate-pulse" />
                     <div className="space-y-1">
-                      <h4 className="font-bold text-white text-xs">Browser Satellite Geolocation</h4>
-                      <p className="text-[11px] text-slate-400">
+                      <h4 className="font-bold text-slate-900 text-xs">Browser Satellite Geolocation</h4>
+                      <p className="text-[11px] text-slate-500">
                         Query the device's hardware GPS sensor to anchor your current physical facility.
                       </p>
                     </div>
@@ -681,30 +686,30 @@ export const SettingsPage: React.FC = () => {
                       type="button"
                       onClick={handleFetchCurrentGps}
                       disabled={gpsLoading}
-                      className="w-full py-2.5 px-4 bg-teal-500/20 border border-teal-500/40 hover:bg-teal-500/30 text-teal-300 font-bold rounded-xl text-xs flex items-center justify-center space-x-2 transition cursor-pointer"
+                      className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center justify-center space-x-2 transition cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
                     >
                       <Navigation className={`w-3.5 h-3.5 ${gpsLoading ? 'animate-spin' : ''}`} />
                       <span>{gpsLoading ? 'Acquiring GPS Fix...' : 'Detect Device GPS Coordinates Now'}</span>
                     </button>
-                    <p className="text-[10px] text-slate-500">
+                    <p className="text-[10px] text-slate-400">
                       * If browser permission is blocked, switch to the "Manual Entry" tab to type coordinates or address directly.
                     </p>
                   </div>
                 )}
 
                 {/* Coordinate Visualizer Card */}
-                <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800/80 flex items-center justify-between text-[11px]">
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between text-[11px]">
                   <div className="flex items-center space-x-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></div>
-                    <span className="text-slate-300 font-mono">
-                      Selected: <span className="text-emerald-400 font-bold">{latitude || '0'}, {longitude || '0'}</span>
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></div>
+                    <span className="text-slate-600 font-mono">
+                      Selected: <span className="text-blue-700 font-bold">{latitude || '0'}, {longitude || '0'}</span>
                     </span>
                   </div>
                   <a
                     href={`https://www.google.com/maps?q=${latitude},${longitude}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-teal-400 hover:text-teal-300 font-semibold inline-flex items-center space-x-1"
+                    className="text-blue-600 hover:text-blue-800 font-bold inline-flex items-center space-x-1"
                   >
                     <span>Preview Map</span>
                     <ExternalLink className="w-3 h-3" />
@@ -716,18 +721,15 @@ export const SettingsPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleSaveHospitalLocation}
-                    className="flex-1 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black rounded-xl text-xs flex items-center justify-center space-x-2 shadow-lg shadow-emerald-500/20 transition cursor-pointer"
+                    className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-xl text-xs flex items-center justify-center space-x-2 shadow-xs transition cursor-pointer active:scale-95"
                   >
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Confirm & Save Hospital Location</span>
+                    <Check className="w-4 h-4" />
+                    <span>Save &amp; Bind Facility Coordinates</span>
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      setEditingLocation(false);
-                      setLocationError(null);
-                    }}
-                    className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition cursor-pointer"
+                    onClick={() => setEditingLocation(false)}
+                    className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition cursor-pointer active:scale-95"
                   >
                     Cancel
                   </button>
@@ -738,36 +740,40 @@ export const SettingsPage: React.FC = () => {
 
         </div>
 
-        {/* RIGHT COLUMN: Integration Status Grid & Credential Management */}
-        <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-              <Cpu className="w-4 h-4 text-teal-400" />
-              <span>Production API Integrations & Credential Audit</span>
+        {/* RIGHT COLUMN: Service Integrations Health & Key Configuration */}
+        <div className="lg:col-span-7 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <h3 className="text-sm font-bold text-slate-900 flex items-center space-x-2">
+              <Cpu className="w-4 h-4 text-blue-600" />
+              <span>Production Integration Matrix</span>
             </h3>
             <div className="flex items-center space-x-2">
               <button
+                type="button"
                 onClick={loadStatuses}
                 disabled={loading}
                 title="Refresh Health Check"
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+                className="p-1.5 text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition cursor-pointer"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
               </button>
               {!loading && (
-                <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
+                <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
                   checkProductionReady(integrations).ready
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-amber-50 text-amber-700 border-amber-200'
                 }`}>
-                  PRODUCTION STATUS: {checkProductionReady(integrations).ready ? 'FULLY OPERATIONAL' : `${checkProductionReady(integrations).unconfiguredCount} CONFIG PENDING`}
+                  STATUS: {checkProductionReady(integrations).ready ? 'FULLY OPERATIONAL' : `${checkProductionReady(integrations).unconfiguredCount} CONFIG PENDING`}
                 </span>
               )}
             </div>
           </div>
 
           {loading ? (
-            <div className="py-8 text-center text-xs text-slate-500">Checking service health & credentials...</div>
+            <div className="py-12 text-center text-xs text-slate-400 bg-white border border-slate-200/80 rounded-2xl">
+              <RefreshCw className="w-5 h-5 text-blue-600 animate-spin mx-auto mb-2" />
+              Checking service health &amp; credentials...
+            </div>
           ) : (
             <div className="space-y-3">
               {integrations.map((item) => {
@@ -775,24 +781,25 @@ export const SettingsPage: React.FC = () => {
                 const isOpen = activeConfigKey === item.key;
 
                 return (
-                  <div key={item.key} className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden transition">
-                    <div className="p-3.5 flex items-center justify-between">
+                  <div key={item.key} className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden transition shadow-card">
+                    <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="space-y-0.5">
                         <div className="flex items-center space-x-2">
-                          <span className="font-bold text-white text-xs">{item.name}</span>
-                          <span className="px-2 py-0.5 text-[9px] font-mono bg-slate-800 text-slate-400 rounded-full">{item.category}</span>
+                          <span className="font-bold text-slate-900 text-xs">{item.name}</span>
+                          <span className="px-2 py-0.5 text-[9px] font-mono bg-slate-100 text-slate-600 rounded-full">{item.category}</span>
                         </div>
-                        <p className="text-[11px] text-slate-400">{item.details}</p>
+                        <p className="text-[11px] text-slate-500">{item.details}</p>
                       </div>
 
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2 shrink-0 self-end sm:self-center">
                         {isConfigurable && (
                           <button
+                            type="button"
                             onClick={() => openConfigDrawer(item.key)}
-                            className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition flex items-center space-x-1 ${
+                            className={`px-3 py-1 text-[11px] font-bold rounded-lg border transition flex items-center space-x-1 cursor-pointer active:scale-95 ${
                               isOpen
-                                ? 'bg-teal-500/20 border-teal-500/50 text-teal-300'
-                                : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-600 hover:text-white'
+                                ? 'bg-blue-50 border-blue-300 text-blue-700'
+                                : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-100'
                             }`}
                           >
                             <Key className="w-3 h-3" />
@@ -802,17 +809,17 @@ export const SettingsPage: React.FC = () => {
 
                         <span className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded-full border flex items-center space-x-1 ${
                           item.status === 'PASS'
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                             : item.status === 'FAIL'
-                            ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                            ? 'bg-rose-50 text-rose-700 border-rose-200'
                             : item.status === 'FALLBACK ONLY'
-                            ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                            : 'bg-slate-800 text-slate-400 border-slate-700'
+                            ? 'bg-amber-50 text-amber-700 border-amber-200'
+                            : 'bg-slate-100 text-slate-600 border-slate-200'
                         }`}>
                           {item.status === 'PASS' ? (
-                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                           ) : (
-                            <AlertTriangle className="w-3 h-3 text-amber-400" />
+                            <AlertTriangle className="w-3 h-3 text-amber-600" />
                           )}
                           <span>{item.status}</span>
                         </span>
@@ -821,25 +828,25 @@ export const SettingsPage: React.FC = () => {
 
                     {/* Expandable Configuration & Live Test Drawer */}
                     {isOpen && (
-                      <div className="px-4 pb-4 pt-2 border-t border-slate-900 bg-slate-900/60 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-semibold text-slate-300 flex items-center space-x-1.5">
-                            <Zap className="w-3.5 h-3.5 text-teal-400" />
-                            <span>Live Credential Management & Endpoint Verification</span>
+                      <div className="px-4 pb-4 pt-3 border-t border-slate-100 bg-slate-50/60 space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                          <span className="text-[11px] font-bold text-slate-800 flex items-center space-x-1.5">
+                            <Zap className="w-3.5 h-3.5 text-blue-600" />
+                            <span>Live Credential Management &amp; Endpoint Verification</span>
                           </span>
-                          <span className="text-[10px] text-slate-500 font-mono">Changes persist to active environment & .env</span>
+                          <span className="text-[10px] text-slate-400 font-mono">Changes persist to active environment</span>
                         </div>
 
                         {actionNotice && actionNotice.key === item.key && (
                           <div className={`p-2.5 rounded-lg text-xs flex items-center space-x-2 ${
                             actionNotice.type === 'success'
-                              ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300'
-                              : 'bg-rose-500/10 border border-rose-500/30 text-rose-300'
+                              ? 'bg-emerald-50 border border-emerald-200 text-emerald-700'
+                              : 'bg-rose-50 border border-rose-200 text-rose-700'
                           }`}>
                             {actionNotice.type === 'success' ? (
-                              <Check className="w-3.5 h-3.5 shrink-0" />
+                              <Check className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
                             ) : (
-                              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                              <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-600" />
                             )}
                             <span>{actionNotice.message}</span>
                           </div>
@@ -849,29 +856,29 @@ export const SettingsPage: React.FC = () => {
                         {item.key === 'supabase' && (
                           <div className="space-y-3">
                             <div className="space-y-1.5">
-                              <label className="block text-[10px] font-mono text-slate-400 uppercase">VITE_SUPABASE_URL</label>
+                              <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider">VITE_SUPABASE_URL</label>
                               <input
                                 type="text"
                                 value={configForm['VITE_SUPABASE_URL'] ?? ''}
                                 onChange={(e) => setConfigForm(prev => ({ ...prev, VITE_SUPABASE_URL: e.target.value }))}
                                 placeholder="https://xyz.supabase.co"
-                                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-emerald-400 focus:border-teal-500 focus:outline-none"
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                               />
                             </div>
                             <div className="space-y-1.5">
-                              <label className="block text-[10px] font-mono text-slate-400 uppercase">VITE_SUPABASE_ANON_KEY</label>
+                              <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider">VITE_SUPABASE_ANON_KEY</label>
                               <div className="relative">
                                 <input
                                   type={showSecrets['supabase'] ? 'text' : 'password'}
                                   value={configForm['VITE_SUPABASE_ANON_KEY'] ?? ''}
                                   onChange={(e) => setConfigForm(prev => ({ ...prev, VITE_SUPABASE_ANON_KEY: e.target.value }))}
                                   placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                                  className="w-full pl-3 pr-10 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-emerald-400 focus:border-teal-500 focus:outline-none"
+                                  className="w-full pl-3 pr-10 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                                 />
                                 <button
                                   type="button"
                                   onClick={() => setShowSecrets(prev => ({ ...prev, supabase: !prev['supabase'] }))}
-                                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-200"
+                                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
                                 >
                                   {showSecrets['supabase'] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                                 </button>
@@ -883,19 +890,19 @@ export const SettingsPage: React.FC = () => {
                         {/* Service-Specific Inputs */}
                         {item.key === 'sarvam' && (
                           <div className="space-y-2">
-                            <label className="block text-[10px] font-mono text-slate-400 uppercase">SARVAM_API_KEY</label>
+                            <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider">SARVAM_API_KEY</label>
                             <div className="relative">
                               <input
                                 type={showSecrets['sarvam'] ? 'text' : 'password'}
                                 value={configForm['SARVAM_API_KEY'] ?? ''}
                                 onChange={(e) => setConfigForm(prev => ({ ...prev, SARVAM_API_KEY: e.target.value }))}
                                 placeholder="sk_..."
-                                className="w-full pl-3 pr-10 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-emerald-400 focus:border-teal-500 focus:outline-none"
+                                className="w-full pl-3 pr-10 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                               />
                               <button
                                 type="button"
                                 onClick={() => setShowSecrets(prev => ({ ...prev, sarvam: !prev['sarvam'] }))}
-                                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-200"
+                                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
                               >
                                 {showSecrets['sarvam'] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                               </button>
@@ -905,19 +912,19 @@ export const SettingsPage: React.FC = () => {
 
                         {item.key === 'openai' && (
                           <div className="space-y-2">
-                            <label className="block text-[10px] font-mono text-slate-400 uppercase">OPENAI_API_KEY</label>
+                            <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider">OPENAI_API_KEY</label>
                             <div className="relative">
                               <input
                                 type={showSecrets['openai'] ? 'text' : 'password'}
                                 value={configForm['OPENAI_API_KEY'] ?? ''}
                                 onChange={(e) => setConfigForm(prev => ({ ...prev, OPENAI_API_KEY: e.target.value }))}
                                 placeholder="sk-proj-..."
-                                className="w-full pl-3 pr-10 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-emerald-400 focus:border-teal-500 focus:outline-none"
+                                className="w-full pl-3 pr-10 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                               />
                               <button
                                 type="button"
                                 onClick={() => setShowSecrets(prev => ({ ...prev, openai: !prev['openai'] }))}
-                                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-200"
+                                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
                               >
                                 {showSecrets['openai'] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                               </button>
@@ -928,32 +935,32 @@ export const SettingsPage: React.FC = () => {
                         {item.key === 'telegram' && (
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="space-y-1.5">
-                              <label className="block text-[10px] font-mono text-slate-400 uppercase">TELEGRAM_BOT_TOKEN</label>
+                              <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider">TELEGRAM_BOT_TOKEN</label>
                               <div className="relative">
                                 <input
                                   type={showSecrets['telegram'] ? 'text' : 'password'}
                                   value={configForm['TELEGRAM_BOT_TOKEN'] ?? ''}
                                   onChange={(e) => setConfigForm(prev => ({ ...prev, TELEGRAM_BOT_TOKEN: e.target.value }))}
                                   placeholder="123456:ABC-DEF..."
-                                  className="w-full pl-3 pr-10 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-emerald-400 focus:border-teal-500 focus:outline-none"
+                                  className="w-full pl-3 pr-10 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                                 />
                                 <button
                                   type="button"
                                   onClick={() => setShowSecrets(prev => ({ ...prev, telegram: !prev['telegram'] }))}
-                                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-200"
+                                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
                                 >
                                   {showSecrets['telegram'] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                                 </button>
                               </div>
                             </div>
                             <div className="space-y-1.5">
-                              <label className="block text-[10px] font-mono text-slate-400 uppercase">TELEGRAM_CHAT_ID</label>
+                              <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider">TELEGRAM_CHAT_ID</label>
                               <input
                                 type="text"
                                 value={configForm['TELEGRAM_CHAT_ID'] ?? ''}
                                 onChange={(e) => setConfigForm(prev => ({ ...prev, TELEGRAM_CHAT_ID: e.target.value }))}
                                 placeholder="-100..."
-                                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-emerald-400 focus:border-teal-500 focus:outline-none"
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                               />
                             </div>
                           </div>
@@ -962,52 +969,52 @@ export const SettingsPage: React.FC = () => {
                         {item.key === 'twilio' && (
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="space-y-1.5">
-                              <label className="block text-[10px] font-mono text-slate-400 uppercase">TWILIO_ACCOUNT_SID</label>
+                              <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider">TWILIO_ACCOUNT_SID</label>
                               <input
                                 type="text"
                                 value={configForm['TWILIO_ACCOUNT_SID'] ?? ''}
                                 onChange={(e) => setConfigForm(prev => ({ ...prev, TWILIO_ACCOUNT_SID: e.target.value }))}
                                 placeholder="AC..."
-                                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-emerald-400 focus:border-teal-500 focus:outline-none"
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                               />
                             </div>
                             <div className="space-y-1.5">
-                              <label className="block text-[10px] font-mono text-slate-400 uppercase">TWILIO_AUTH_TOKEN</label>
+                              <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider">TWILIO_AUTH_TOKEN</label>
                               <div className="relative">
                                 <input
                                   type={showSecrets['twilio'] ? 'text' : 'password'}
                                   value={configForm['TWILIO_AUTH_TOKEN'] ?? ''}
                                   onChange={(e) => setConfigForm(prev => ({ ...prev, TWILIO_AUTH_TOKEN: e.target.value }))}
                                   placeholder="Token..."
-                                  className="w-full pl-3 pr-10 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-emerald-400 focus:border-teal-500 focus:outline-none"
+                                  className="w-full pl-3 pr-10 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                                 />
                                 <button
                                   type="button"
                                   onClick={() => setShowSecrets(prev => ({ ...prev, twilio: !prev['twilio'] }))}
-                                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-200"
+                                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
                                 >
                                   {showSecrets['twilio'] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                                 </button>
                               </div>
                             </div>
                             <div className="space-y-1.5">
-                              <label className="block text-[10px] font-mono text-slate-400 uppercase">FROM PHONE</label>
+                              <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider">FROM PHONE</label>
                               <input
                                 type="text"
                                 value={configForm['TWILIO_FROM_PHONE'] ?? ''}
                                 onChange={(e) => setConfigForm(prev => ({ ...prev, TWILIO_FROM_PHONE: e.target.value }))}
                                 placeholder="+18005550199"
-                                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-emerald-400 focus:border-teal-500 focus:outline-none"
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                               />
                             </div>
                             <div className="space-y-1.5">
-                              <label className="block text-[10px] font-mono text-slate-400 uppercase">TO PHONE (EMERGENCY)</label>
+                              <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider">TO PHONE (EMERGENCY)</label>
                               <input
                                 type="text"
                                 value={configForm['TWILIO_TO_PHONE'] ?? ''}
                                 onChange={(e) => setConfigForm(prev => ({ ...prev, TWILIO_TO_PHONE: e.target.value }))}
                                 placeholder="+91999900000"
-                                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-emerald-400 focus:border-teal-500 focus:outline-none"
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                               />
                             </div>
                           </div>
@@ -1016,7 +1023,7 @@ export const SettingsPage: React.FC = () => {
                         {item.key === 'n8n' && (
                           <div className="space-y-3">
                             <div className="space-y-1.5">
-                              <label className="block text-[10px] font-mono text-slate-400 uppercase">REMOTE N8N BASE URL</label>
+                              <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider">REMOTE N8N BASE URL</label>
                               <input
                                 type="text"
                                 value={configForm['N8N_BASE_URL'] ?? ''}
@@ -1029,49 +1036,49 @@ export const SettingsPage: React.FC = () => {
                                   }));
                                 }}
                                 placeholder="https://your-n8n-instance.railway.app or https://n8n.cloud"
-                                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-emerald-400 focus:border-teal-500 focus:outline-none"
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                               />
-                              <p className="text-[10px] text-slate-500">Root domain of your remote n8n server (e.g., https://n8n.example.com)</p>
+                              <p className="text-[10px] text-slate-400">Root domain of your remote n8n server (e.g., https://n8n.example.com)</p>
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <div className="space-y-1.5">
-                                <label className="block text-[10px] font-mono text-slate-400 uppercase">N8N_WEBHOOK_URL</label>
+                                <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider">N8N_WEBHOOK_URL</label>
                                 <input
                                   type="text"
                                   value={configForm['N8N_WEBHOOK_URL'] ?? ''}
                                   onChange={(e) => setConfigForm(prev => ({ ...prev, N8N_WEBHOOK_URL: e.target.value }))}
                                   placeholder="https://your-n8n.example.com/webhook"
-                                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-emerald-400 focus:border-teal-500 focus:outline-none"
+                                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                                 />
                               </div>
                               <div className="space-y-1.5">
-                                <label className="block text-[10px] font-mono text-slate-400 uppercase">WEBHOOK_SECRET</label>
+                                <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider">WEBHOOK_SECRET</label>
                                 <input
                                   type="text"
                                   value={configForm['N8N_WEBHOOK_SECRET'] ?? ''}
                                   onChange={(e) => setConfigForm(prev => ({ ...prev, N8N_WEBHOOK_SECRET: e.target.value }))}
                                   placeholder="medconnect-n8n-secret-key"
-                                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-emerald-400 focus:border-teal-500 focus:outline-none"
+                                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
                                 />
                               </div>
                             </div>
-                            <div className="p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-[11px] text-slate-400 space-y-1">
-                              <span className="font-semibold text-slate-300 block">Workflows Trigger Endpoints in n8n Remote:</span>
-                              <div className="font-mono text-[10px] text-teal-400">POST {configForm['N8N_WEBHOOK_URL'] || 'https://.../webhook'}/medconnect-test</div>
-                              <div className="font-mono text-[10px] text-teal-400">POST {configForm['N8N_WEBHOOK_URL'] || 'https://.../webhook'}/ai-receptionist</div>
-                              <div className="font-mono text-[10px] text-teal-400">POST {configForm['N8N_WEBHOOK_URL'] || 'https://.../webhook'}/emergency-dispatch</div>
+                            <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-[11px] text-slate-600 space-y-1">
+                              <span className="font-bold text-slate-800 block">Workflows Trigger Endpoints in n8n Remote:</span>
+                              <div className="font-mono text-[10px] text-blue-700 font-semibold">POST {configForm['N8N_WEBHOOK_URL'] || 'https://.../webhook'}/medconnect-test</div>
+                              <div className="font-mono text-[10px] text-blue-700 font-semibold">POST {configForm['N8N_WEBHOOK_URL'] || 'https://.../webhook'}/ai-receptionist</div>
+                              <div className="font-mono text-[10px] text-blue-700 font-semibold">POST {configForm['N8N_WEBHOOK_URL'] || 'https://.../webhook'}/emergency-dispatch</div>
                             </div>
                           </div>
                         )}
 
                         {/* Action Buttons: Test Connection & Save */}
-                        <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-800">
+                        <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-200">
                           <button
                             type="button"
                             onClick={() => handleTestService(item.key)}
                             disabled={testingService === item.key}
-                            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition disabled:opacity-50"
+                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition disabled:opacity-50 cursor-pointer active:scale-95"
                           >
                             <RefreshCw className={`w-3 h-3 ${testingService === item.key ? 'animate-spin' : ''}`} />
                             <span>{testingService === item.key ? 'Testing...' : 'Test Connection'}</span>
@@ -1080,10 +1087,10 @@ export const SettingsPage: React.FC = () => {
                             type="button"
                             onClick={() => handleSaveCredentials(item.key)}
                             disabled={savingService === item.key}
-                            className="px-3.5 py-1.5 bg-teal-500 hover:bg-teal-400 text-slate-950 rounded-lg text-xs font-bold flex items-center space-x-1.5 shadow-md shadow-teal-500/20 transition disabled:opacity-50"
+                            className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center space-x-1.5 shadow-xs transition disabled:opacity-50 cursor-pointer active:scale-95"
                           >
                             <Check className="w-3 h-3" />
-                            <span>{savingService === item.key ? 'Saving...' : 'Save & Activate'}</span>
+                            <span>{savingService === item.key ? 'Saving...' : 'Save &amp; Activate'}</span>
                           </button>
                         </div>
                       </div>

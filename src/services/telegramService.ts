@@ -18,49 +18,72 @@ export interface TelegramAlertPayload {
   etaMinutes?: number;
 }
 
+function escapeTelegramMarkdown(str: string): string {
+  if (!str) return '';
+  return String(str).replace(/([_*`\[\]])/g, '\\$1');
+}
+
 export function getTelegramCredentials(): { token: string; chatId: string } {
   let token = '';
   let chatId = '';
+
+  // 1. Browser localStorage check
   if (typeof window !== 'undefined' && window.localStorage) {
-    const storedToken = window.localStorage.getItem('MEDCONNECT_TELEGRAM_BOT_TOKEN');
-    const storedChat = window.localStorage.getItem('MEDCONNECT_TELEGRAM_CHAT_ID');
-    if (storedToken && storedToken.trim()) token = storedToken.trim();
-    if (storedChat && storedChat.trim()) chatId = storedChat.trim();
+    try {
+      const storedToken = window.localStorage.getItem('MEDCONNECT_TELEGRAM_BOT_TOKEN');
+      const storedChat = window.localStorage.getItem('MEDCONNECT_TELEGRAM_CHAT_ID');
+      if (storedToken && storedToken.trim()) token = storedToken.trim();
+      if (storedChat && storedChat.trim()) chatId = storedChat.trim();
+    } catch {}
   }
+
+  // 2. process.env check (Node or Vite define)
   if (!token && typeof process !== 'undefined' && process.env) {
-    token = process.env.TELEGRAM_BOT_TOKEN || '';
+    token = process.env.TELEGRAM_BOT_TOKEN || process.env.VITE_TELEGRAM_BOT_TOKEN || '';
   }
   if (!chatId && typeof process !== 'undefined' && process.env) {
-    chatId = process.env.TELEGRAM_CHAT_ID || '';
+    chatId = process.env.TELEGRAM_CHAT_ID || process.env.VITE_TELEGRAM_CHAT_ID || '';
   }
+
+  // 3. import.meta.env check (Vite build / dev)
   if (!token && typeof import.meta !== 'undefined' && (import.meta as any).env) {
     token = (import.meta as any).env.VITE_TELEGRAM_BOT_TOKEN || (import.meta as any).env.TELEGRAM_BOT_TOKEN || '';
   }
   if (!chatId && typeof import.meta !== 'undefined' && (import.meta as any).env) {
     chatId = (import.meta as any).env.VITE_TELEGRAM_CHAT_ID || (import.meta as any).env.TELEGRAM_CHAT_ID || '';
   }
+
+  // 4. Default fallback for live app / browser environment
+  if (!token && typeof window !== 'undefined') {
+    token = '8790721986:AAGfE633Ko9P-aRXnd8z0MkV4VtoO-M3HaY';
+  }
+  if (!chatId && typeof window !== 'undefined') {
+    chatId = '6537122486';
+  }
+
   return { token: token.trim(), chatId: chatId.trim() };
 }
 
 export function formatTelegramMessage(payload: TelegramAlertPayload) {
-  const requestingHospital = payload.emergencyHospital || payload.requestingHospitalName || 'Emergency Hospital';
-  const resourceName = payload.resource || payload.resourceType || 'Medical Resource';
+  const requestingHospital = escapeTelegramMarkdown(payload.emergencyHospital || payload.requestingHospitalName || 'Emergency Hospital');
+  const resourceName = escapeTelegramMarkdown(payload.resource || payload.resourceType || 'Medical Resource');
   const quantity = payload.quantity;
   const distanceKm = payload.distanceKm;
-  const urgency = payload.urgency || 'CRITICAL';
+  const urgency = escapeTelegramMarkdown(payload.urgency || 'CRITICAL');
   const requestId = payload.requestId || payload.reqNumber || 'em-unknown';
+  const escapedRequestId = escapeTelegramMarkdown(requestId);
   const supplyingHospitalId = payload.supplyingHospitalId || 'hosp-102';
 
   const text = [
     `🚨 *EMERGENCY SUPPLY DISPATCH ALERT* 🚨`,
     ``,
     `🏥 *Emergency Hospital:* ${requestingHospital}`,
-    `📦 *Resource:* ${resourceName}${payload.bloodGroup ? ` (${payload.bloodGroup})` : ''}`,
+    `📦 *Resource:* ${resourceName}${payload.bloodGroup ? ` (${escapeTelegramMarkdown(payload.bloodGroup)})` : ''}`,
     `🔢 *Quantity:* ${quantity}`,
     `📍 *Distance:* ${distanceKm} km`,
     `⚠️ *Urgency:* ${urgency}`,
     ``,
-    `*Request ID:* ${requestId}`
+    `*Request ID:* ${escapedRequestId}`
   ].join('\n');
 
   const reply_markup = {
@@ -103,7 +126,7 @@ export async function sendTelegramEmergencyAlert(payload: TelegramAlertPayload):
 
   try {
     const telegramUrl = `https://api.telegram.org/bot${token}/sendMessage`;
-    const response = await fetch(telegramUrl, {
+    let response = await fetch(telegramUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -114,7 +137,24 @@ export async function sendTelegramEmergencyAlert(payload: TelegramAlertPayload):
       }),
     });
 
-    const data = await response.json();
+    let data = await response.json();
+
+    // Fallback: if Markdown parsing fails (entity error), retry in plain text format
+    if (!response.ok && data?.description && (data.description.includes('parse entities') || data.description.includes('entity'))) {
+      console.warn('[telegramService] Markdown parsing error from Telegram API, retrying with plain text:', data.description);
+      const plainText = text.replace(/\\([_*`\[\]])/g, '$1').replace(/[*_`\[\]]/g, '');
+      response = await fetch(telegramUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: plainText,
+          reply_markup: reply_markup,
+        }),
+      });
+      data = await response.json();
+    }
+
     if (response.ok && data.ok) {
       return {
         success: true,

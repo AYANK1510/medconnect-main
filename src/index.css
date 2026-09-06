@@ -1,60 +1,480 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Deep Navy foundation for trustworthy healthcare SaaS */
+  --color-navy-50: #f8fafc;
+  --color-navy-100: #f1f5f9;
+  --color-navy-200: #e2e8f0;
+  --color-navy-300: #cbd5e1;
+  --color-navy-400: #94a3b8;
+  --color-navy-500: #64748b;
+  --color-navy-600: #475569;
+  --color-navy-700: #334155;
+  --color-navy-800: #1e293b;
+  --color-navy-900: #0f172a;
+  --color-navy-950: #0a1128;
+
+  /* Healthcare Blue (Primary brand, clinical intelligence) */
+  --color-health-blue-50: #eff6ff;
+  --color-health-blue-100: #dbeafe;
+  --color-health-blue-200: #bfdbfe;
+  --color-health-blue-300: #93c5fd;
+  --color-health-blue-400: #60a5fa;
+  --color-health-blue-500: #3b82f6;
+  --color-health-blue-600: #2563eb;
+  --color-health-blue-700: #1d4ed8;
+  --color-health-blue-800: #1e40af;
+  --color-health-blue-900: #1e3a8a;
+
+  /* Healthcare Green (Vitality, confirmation, live status) */
+  --color-health-green-50: #ecfdf5;
+  --color-health-green-100: #d1fae5;
+  --color-health-green-200: #a7f3d0;
+  --color-health-green-300: #6ee7b7;
+  --color-health-green-400: #34d399;
+  --color-health-green-500: #10b981;
+  --color-health-green-600: #059669;
+  --color-health-green-700: #047857;
+  --color-health-green-800: #065f46;
+  --color-health-green-900: #064e3b;
+
+  /* Controlled Emergency Red (high urgency without visual panic) */
+  --color-emergency-50: #fef2f2;
+  --color-emergency-100: #fee2e2;
+  --color-emergency-200: #fecaca;
+  --color-emergency-300: #fca5a5;
+  --color-emergency-400: #f87171;
+  --color-emergency-500: #ef4444;
+  --color-emergency-600: #dc2626;
+  --color-emergency-700: #b91c1c;
+  --color-emergency-800: #991b1b;
+  --color-emergency-900: #7f1d1d;
+
+  /* Warning (triage flags, wait times) */
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-300: #fcd34d;
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+
+  /* Success alias */
+  --color-success-50: #ecfdf5;
+  --color-success-100: #d1fae5;
+  --color-success-500: #10b981;
+  --color-success-600: #059669;
+  --color-success-700: #047857;
+
+  /* Shadows */
+  --shadow-soft: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+  --shadow-card-hover: 0 10px 25px -3px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.04);
+  --shadow-dropdown: 0 10px 30px -5px rgba(15, 23, 42, 0.12), 0 4px 6px -2px rgba(15, 23, 42, 0.04);
+
+  /* Border Radii */
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+}
+
 @layer base {
-  :root {
-    --color-primary: 20 184 166;
-    --color-emergency: 244 63 94;
-    --color-success: 16 185 129;
-    --color-warning: 245 158 11;
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
   body {
-    @apply bg-slate-950 text-slate-100 font-sans antialiased selection:bg-teal-500 selection:text-slate-950;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    margin: 0;
+    min-height: 100vh;
+    font-family: var(--font-sans);
+    background-color: #f8fafc;
+    color: #0f172a;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 }
 
-/* Linear & Enterprise SaaS UI Design System */
-.saas-card {
-  background: rgba(15, 23, 42, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+:root {
+  /* Brand Healthcare Colors */
+  --color-navy: #0f172a;
+  --color-navy-dark: #0a1128;
+  --color-blue-primary: #2563eb;
+  --color-blue-hover: #1d4ed8;
+  --color-blue-light: #eff6ff;
+  --color-green-primary: #10b981;
+  --color-green-hover: #059669;
+  --color-green-light: #ecfdf5;
+  --color-emergency: #ef4444;
+  --color-emergency-hover: #dc2626;
+  --color-emergency-light: #fef2f2;
+  
+  /* Surface & Border */
+  --bg-app: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-subtle: #f1f5f9;
+  --border-soft: #e2e8f0;
+  --border-subtle: #f1f5f9;
+  
+  /* Text */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-subtle: #94a3b8;
+  
+  /* Shadows */
+  --shadow-soft: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+  --shadow-card-hover: 0 10px 25px -3px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.04);
+  --shadow-dropdown: 0 10px 30px -5px rgba(15, 23, 42, 0.12), 0 4px 6px -2px rgba(15, 23, 42, 0.04);
+  
+  /* Radius */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
 }
 
+/* Premium Healthcare SaaS Component Tokens (Source Visual Authority) */
+/* Soft healthcare card with rounded corners and subtle shadow */
+.hc-card {
+  background-color: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 1rem;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+  transition: all 0.2s ease;
+}
+
+.hc-card-hover {
+  background-color: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 1rem;
+  transition: all 0.2s ease;
+}
+.hc-card-hover:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 10px 25px -3px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.04);
+}
+
+.hc-card-elevated {
+  background-color: #ffffff;
+  border: 1px solid #f1f5f9;
+  border-radius: 1rem;
+  box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.12), 0 4px 6px -2px rgba(15, 23, 42, 0.04);
+}
+
+/* Primary Healthcare Blue Button */
+.hc-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border-radius: 0.75rem;
+  background-color: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 150ms ease;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+}
+.hc-btn-primary:hover {
+  background-color: #1d4ed8;
+}
+.hc-btn-primary:active {
+  background-color: #1e40af;
+}
+.hc-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Secondary Neutral Slate Button */
+.hc-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border-radius: 0.75rem;
+  background-color: #f1f5f9;
+  color: #334155;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 150ms ease;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+}
+.hc-btn-secondary:hover {
+  background-color: #e2e8f0;
+}
+.hc-btn-secondary:active {
+  background-color: #cbd5e1;
+}
+.hc-btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Outline Button */
+.hc-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border-radius: 0.75rem;
+  background-color: #ffffff;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 150ms ease;
+  cursor: pointer;
+  text-decoration: none;
+}
+.hc-btn-outline:hover {
+  background-color: #f8fafc;
+}
+.hc-btn-outline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Controlled Emergency Button */
+.hc-btn-emergency {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border-radius: 0.75rem;
+  background-color: #e11d48;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 150ms ease;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+}
+.hc-btn-emergency:hover {
+  background-color: #be123c;
+}
+.hc-btn-emergency:active {
+  background-color: #9f1239;
+}
+.hc-btn-emergency:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Clean form inputs */
+.hc-input {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  color: #1e293b;
+  outline: none;
+  transition: all 150ms ease;
+}
+.hc-input::placeholder {
+  color: #94a3b8;
+}
+.hc-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* Form select */
+.hc-select {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  color: #1e293b;
+  outline: none;
+  transition: all 150ms ease;
+  cursor: pointer;
+}
+.hc-select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* Badges */
+.hc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1rem;
+}
+.hc-badge-blue {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid rgba(191, 219, 254, 0.8);
+}
+.hc-badge-green {
+  background-color: #ecfdf5;
+  color: #047857;
+  border: 1px solid rgba(167, 243, 208, 0.8);
+}
+.hc-badge-emergency {
+  background-color: #fff1f2;
+  color: #be123c;
+  border: 1px solid rgba(254, 205, 211, 0.8);
+}
+.hc-badge-warning {
+  background-color: #fffbeb;
+  color: #92400e;
+  border: 1px solid rgba(253, 230, 138, 0.8);
+}
+.hc-badge-neutral {
+  background-color: #f1f5f9;
+  color: #334155;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+/* Backward-compatible classes styled with source clean clinical fidelity */
+.saas-card {
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 1rem;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
 .saas-card:hover {
-  border-color: rgba(20, 184, 166, 0.3);
-  box-shadow: 0 8px 30px -4px rgba(20, 184, 166, 0.15);
+  border-color: #cbd5e1;
+  box-shadow: 0 10px 25px -3px rgba(15, 23, 42, 0.08);
 }
 
 .saas-card-emergency {
-  background: rgba(244, 63, 94, 0.06);
-  border: 1px solid rgba(244, 63, 94, 0.35);
-  box-shadow: 0 4px 25px -4px rgba(244, 63, 94, 0.2);
+  background: #fff1f2;
+  border: 1px solid rgba(244, 63, 94, 0.4);
+  border-radius: 1rem;
+  box-shadow: 0 4px 25px -4px rgba(244, 63, 94, 0.15);
 }
 
 .saas-badge-teal {
-  background: rgba(20, 184, 166, 0.12);
-  color: #2dd4bf;
-  border: 1px solid rgba(20, 184, 166, 0.3);
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 .saas-badge-emerald {
-  background: rgba(16, 185, 129, 0.12);
-  color: #34d399;
+  background: #ecfdf5;
+  color: #047857;
   border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 .saas-badge-rose {
-  background: rgba(244, 63, 94, 0.12);
-  color: #fb7185;
+  background: #fff1f2;
+  color: #be123c;
   border: 1px solid rgba(244, 63, 94, 0.3);
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 .saas-badge-amber {
-  background: rgba(245, 158, 11, 0.12);
-  color: #fbbf24;
+  background: #fffbeb;
+  color: #92400e;
   border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.saas-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border-radius: 0.75rem;
+  background-color: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.75rem;
+  transition: background-color 0.15s ease;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  border: none;
+}
+.saas-btn-primary:hover {
+  background-color: #1d4ed8;
+}
+
+.saas-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border-radius: 0.75rem;
+  background-color: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  font-weight: 600;
+  font-size: 0.75rem;
+  transition: background-color 0.15s ease;
+  cursor: pointer;
+}
+.saas-btn-secondary:hover {
+  background-color: #e2e8f0;
+}
+
+.saas-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border-radius: 0.75rem;
+  background-color: #e11d48;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.75rem;
+  transition: background-color 0.15s ease;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  border: none;
+}
+.saas-btn-danger:hover {
+  background-color: #be123c;
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
 }
 
 /* Keyframe Animations */
@@ -93,7 +513,7 @@
 
 /* Skeleton Loading Shimmer Utility */
 .skeleton-shimmer {
-  background: linear-gradient(90deg, rgba(30, 41, 59, 0.5) 25%, rgba(51, 65, 85, 0.8) 50%, rgba(30, 41, 59, 0.5) 75%);
+  background: linear-gradient(90deg, rgba(241, 245, 249, 0.8) 25%, rgba(226, 232, 240, 1) 50%, rgba(241, 245, 249, 0.8) 75%);
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.5s infinite;
 }
@@ -105,14 +525,22 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.9);
+  background: rgba(241, 245, 249, 0.6);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(51, 65, 85, 0.8);
+  background: rgba(148, 163, 184, 0.8);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(20, 184, 166, 0.7);
+  background: rgba(37, 99, 235, 0.6);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

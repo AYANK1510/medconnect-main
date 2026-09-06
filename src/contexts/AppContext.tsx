@@ -28,10 +28,13 @@ import { filterHospitalsWithinRadius } from '../services/geoService';
 import { generateQRCodeDataUrl } from '../services/qrService';
 import { sendTelegramEmergencyAlert } from '../services/telegramService';
 import { initiateTwilioVoiceCall } from '../services/twilioService';
+import { registerNetworkHospital, type RegisterHospitalInput } from '../services/hospitalService';
 import confetti from 'canvas-confetti';
 
 export type ActivePage =
   | 'landing'
+  | 'patients_landing'
+  | 'hospitals_landing'
   | 'patient'
   | 'reception'
   | 'er_command'
@@ -104,7 +107,9 @@ interface AppContextType {
   acceptEmergencyRequest: (requestId: string, acceptingHospitalId: string) => Promise<void>;
   simulateThreeMinuteTimeout: (requestId: string) => Promise<void>;
   advanceQueue: () => void;
-  
+  // Hospital Network Management
+  addHospital: (details: RegisterHospitalInput) => Promise<Hospital>;
+
   // Quick Demo Triggers for Judges
   runDemoScenario: (scenarioId: number) => Promise<void>;
 
@@ -602,6 +607,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addToast('Queue Advanced', 'Next patient token called to consultation room.', 'info');
   };
 
+  // Manual Hospital Addition & Network Registration
+  const addHospital = async (details: RegisterHospitalInput): Promise<Hospital> => {
+    const result = await registerNetworkHospital(details);
+    setHospitals((prev) => [...prev, result.uiHospital]);
+    addActivityLog(
+      'Hospital Registered to Network',
+      `${result.uiHospital.name} (${result.uiHospital.code}) added within 15 km network (${result.distanceKm} km from center).`,
+      'system',
+      'info'
+    );
+    addToast(
+      'Hospital Registered Successfully',
+      `${result.uiHospital.name} is now active in the 15 km regional emergency network (${result.distanceKm} km).`,
+      'success'
+    );
+    return result.uiHospital;
+  };
+
   // Fast Hackathon Demo Scenarios for Judges
   const runDemoScenario = async (scenarioId: number) => {
     switch (scenarioId) {
@@ -719,6 +742,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         acceptEmergencyRequest,
         simulateThreeMinuteTimeout,
         advanceQueue,
+        addHospital,
         runDemoScenario,
         aiWidgetOpen,
         setAiWidgetOpen,

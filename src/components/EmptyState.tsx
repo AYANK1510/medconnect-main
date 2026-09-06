@@ -6,7 +6,7 @@ interface EmptyStateProps {
   description: string;
   actionLabel?: string;
   onAction?: () => void;
-  icon?: any;
+  icon?: React.ComponentType<{ className?: string }>;
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
@@ -17,25 +17,27 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   icon: Icon = ShieldCheck,
 }) => {
   return (
-    <div className="p-8 rounded-3xl glass-panel bg-slate-900/50 border border-slate-800 text-center space-y-4 max-w-md mx-auto my-6 animate-fadeIn">
-      <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center mx-auto text-cyan-400">
-        <Icon className="w-7 h-7 text-cyan-400" />
+    <div className="p-8 rounded-2xl bg-white border border-slate-200/80 shadow-card text-center space-y-4 max-w-md mx-auto my-6 animate-fadeIn">
+      <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mx-auto text-blue-600 shadow-sm">
+        <Icon className="w-7 h-7 text-blue-600" />
       </div>
 
       <div className="space-y-1">
-        <h3 className="font-bold text-base text-white">{title}</h3>
-        <p className="text-xs text-slate-400 leading-relaxed">{description}</p>
+        <h3 className="font-bold text-base text-slate-900">{title}</h3>
+        <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">{description}</p>
       </div>
 
       {actionLabel && onAction && (
         <button
           onClick={onAction}
-          className="px-5 py-2.5 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold text-xs hover:bg-cyan-500/30 transition inline-flex items-center space-x-1.5"
+          className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-xs transition shadow-sm inline-flex items-center space-x-1.5 cursor-pointer"
         >
-          <Plus className="w-4 h-4 text-cyan-400" />
+          <Plus className="w-4 h-4 text-white" />
           <span>{actionLabel}</span>
         </button>
       )}
     </div>
   );
 };
+
+export default EmptyState;

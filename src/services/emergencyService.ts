@@ -6,6 +6,7 @@ import { notifyEmergencyEvent } from './notificationService';
 import { EmergencyRequestSchema, LocationSchema, validateInput } from '../utils/validation';
 import { AppError } from '../utils/errors';
 import { callN8nEmergencyDispatch } from './n8nRealIntegration';
+import { calculateDistanceKm } from './geoService';
 
 export async function createEmergencyRequest(data: {
   requesting_hospital_id: string;
@@ -43,10 +44,9 @@ export async function createEmergencyRequest(data: {
   const localRes = dbEngine.createEmergencyRequest(data);
 
   // Dispatch notifications & Telegram alerts for authorized supplying hospital matches
-  if (localRes.matches.length > 0) {
-    const reqHosp = dbEngine.getHospitals().find(h => h.id === data.requesting_hospital_id);
-    const reqHospName = reqHosp?.name || 'Emergency Hospital';
+  const reqHospName = reqHosp?.name || 'Emergency Hospital';
 
+  if (localRes.matches.length > 0) {
     for (const match of localRes.matches) {
       await sendTelegramEmergencyAlert({
         requestId: localRes.request.id,
@@ -65,6 +65,63 @@ export async function createEmergencyRequest(data: {
         resourceType: data.resource_name || data.resource_type,
         quantity: data.quantity,
         distanceKm: match.distance_km,
+      });
+    }
+  } else {
+    // If no pre-matched excess inventory exists, broadcast alert to active network hospitals within 15 km
+    const reqLat = reqHosp?.latitude ?? (reqHosp as any)?.lat ?? 28.6139;
+    const reqLng = reqHosp?.longitude ?? (reqHosp as any)?.lng ?? 77.2090;
+
+    const nearbyHospitals = dbEngine.getHospitals()
+      .filter(h => h.id !== data.requesting_hospital_id && h.is_active !== false)
+      .map(h => {
+        const hLat = h.latitude ?? (h as any).lat ?? 0;
+        const hLng = h.longitude ?? (h as any).lng ?? 0;
+        let dist = 4.2;
+        try {
+          dist = calculateDistanceKm(reqLat, reqLng, hLat, hLng);
+        } catch {
+          dist = 4.2;
+        }
+        return { hospital: h, distanceKm: dist };
+      })
+      .filter(item => item.distanceKm <= 15.0)
+      .sort((a, b) => a.distanceKm - b.distanceKm);
+
+    // Alert the primary supplying hospitals in the 15km geo-fence
+    const targetHospitals = nearbyHospitals.length > 0 ? nearbyHospitals.slice(0, 3) : [];
+    for (const item of targetHospitals) {
+      const match: EmergencyMatch = {
+        id: `em-match-${Date.now()}-${item.hospital.id}`,
+        request_id: localRes.request.id,
+        hospital_id: item.hospital.id,
+        hospital_name: item.hospital.name,
+        distance_km: item.distanceKm,
+        available_quantity: 0,
+        status: 'PENDING',
+        notified_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+      };
+      dbEngine.addEmergencyMatch(match);
+      localRes.matches.push(match);
+
+      await sendTelegramEmergencyAlert({
+        requestId: localRes.request.id,
+        supplyingHospitalId: item.hospital.id,
+        emergencyHospital: reqHospName,
+        resource: data.resource_name || data.resource_type,
+        quantity: data.quantity,
+        distanceKm: item.distanceKm,
+        urgency: data.urgency,
+      });
+
+      await notifyEmergencyEvent('MATCH_FOUND', {
+        requestId: localRes.request.id,
+        hospitalId: data.requesting_hospital_id,
+        supplyingHospitalName: item.hospital.name,
+        resourceType: data.resource_name || data.resource_type,
+        quantity: data.quantity,
+        distanceKm: item.distanceKm,
       });
     }
   }

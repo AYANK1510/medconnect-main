@@ -1,308 +1,683 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
+import { AuditConsoleModal } from '../components/AuditConsoleModal';
 import {
-  Activity,
-  ShieldAlert,
-  Mic,
-  Truck,
-  MapPin,
-  Users,
+  HeartPulse,
+  User,
   Building2,
+  ArrowRight,
+  CheckCircle2,
   Clock,
-  ArrowRight
+  Radio,
+  Mic,
+  MapPin,
+  Terminal,
+  Languages
 } from 'lucide-react';
+import { Badge, Button } from '../components/ui';
 
-export const LandingPage: React.FC<{ onLaunchConnecting?: () => void }> = () => {
-  const { setActivePage, setAiWidgetOpen, runDemoScenario } = useApp();
+interface LandingPageProps {
+  onNavigate?: (section: string, tab?: string | null) => void;
+  onOpenAudit?: () => void;
+  onResetDemo?: () => void;
+  isResetting?: boolean;
+}
+
+export const LandingPage: React.FC<LandingPageProps> = ({ 
+  onNavigate, 
+  onOpenAudit, 
+  onResetDemo: _onResetDemo, 
+  isResetting: _isResetting = false 
+}) => {
+  const { setActivePage, emergencyRequests } = useApp();
   const { switchRole } = useAuth();
+  const navigate = useNavigate();
 
-  const [floatingEvents] = useState([
-    { id: 1, text: 'Appointment #MED-4029 booked', time: '1s ago', color: 'border-cyan-500/40 text-cyan-300' },
-    { id: 2, text: 'O- Blood SOS request created', time: '3s ago', color: 'border-rose-500/50 text-rose-300' },
-    { id: 3, text: 'Metro Hospital accepted dispatch', time: '5s ago', color: 'border-emerald-500/40 text-emerald-300' },
-    { id: 4, text: 'Live queue recalculated via n8n', time: '8s ago', color: 'border-purple-500/40 text-purple-300' },
-  ]);
+  const [selectedLanguageDemo, setSelectedLanguageDemo] = useState('en');
+  const [auditOpen, setAuditOpen] = useState(false);
+  const handleOpenAudit = onOpenAudit || (() => setAuditOpen(true));
+
+  const languages = [
+    { code: 'en', name: 'English', text: '“I need an orthopedic appointment for knee pain tomorrow morning.”' },
+    { code: 'hi', name: 'हिन्दी (Hindi)', text: '“मुझे कल सुबह डॉक्टर से छाती के दर्द के लिए मिलना है।”' },
+    { code: 'ta', name: 'தமிழ் (Tamil)', text: '“எனக்கு நாளை காலை பொது மருத்துவரை பார்க்க வேண்டும்.”' },
+    { code: 'te', name: 'తెలుగు (Telugu)', text: '“నాకు నిన్నటి నుండి తీవ్రమైన కడుపు నొప్పి ఉంది.”' },
+  ];
+
+  const navigateTo = (section: string, tab: string | null = null) => {
+    if (onNavigate) {
+      onNavigate(section, tab);
+    } else {
+      if (section === 'landing') setActivePage('landing');
+      else if (section === 'patients-landing') setActivePage('patients_landing');
+      else if (section === 'hospitals-landing') setActivePage('hospitals_landing');
+      else if (section === 'patients-app') {
+        switchRole('patient');
+        setActivePage('patient');
+      } else if (section === 'hospitals-app') {
+        switchRole('hospital_admin');
+        if (tab === 'emergency') setActivePage('emergency_dispatch');
+        else if (tab === 'doctor') setActivePage('doctors');
+        else setActivePage('reception');
+      } else if (section === 'login') {
+        navigate('/login');
+      }
+    }
+  };
+
+  const handlePatientClick = () => {
+    navigateTo('patients-landing');
+  };
+
+  const handleHospitalStaffClick = () => {
+    navigateTo('hospitals-landing');
+  };
+
+  const handleAiReceptionistClick = () => {
+    navigateTo('patients-landing');
+  };
 
   return (
-    <div className="space-y-16 py-4 animate-fadeIn">
-      
-      {/* Hero Section */}
-      <section className="relative overflow-hidden rounded-3xl glass-panel bg-gradient-to-b from-slate-900/95 via-slate-950/95 to-slate-950 border border-slate-800 p-6 md:p-12">
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-96 h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none"></div>
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-blue-600 selection:text-white flex flex-col">
+      {/* ======================================================= */}
+      {/* 1. HERO SECTION                                         */}
+      {/* ======================================================= */}
+      <section className="relative pt-12 pb-20 md:pt-20 md:pb-28 px-4 sm:px-6 lg:px-8 overflow-hidden bg-gradient-to-b from-white via-blue-50/20 to-slate-50 border-b border-slate-200/80">
+        
+        {/* Subtle decorative background circles */}
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/3 left-10 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="max-w-5xl mx-auto text-center space-y-6 relative z-10">
-          
-          {/* Eyebrow */}
-          <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-bold tracking-widest uppercase">
-            <Activity className="w-4 h-4 text-emerald-400 animate-pulse" />
-            <span>REAL-TIME • AI-POWERED • FOR A HEALTHIER TOMORROW</span>
-          </div>
-
-          {/* Main Heading */}
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight text-white leading-none">
-            Healthcare{' '}
-            <span className="block text-emerald-400 text-4xl md:text-6xl lg:text-7xl mt-2 font-black">
-              Without Delays
-            </span>
-          </h1>
-
-          {/* Description */}
-          <p className="text-base md:text-lg text-slate-300 max-w-3xl mx-auto leading-relaxed">
-            AI-powered appointments, real-time emergency resource sharing, and a connected hospital network — all in one platform.
-          </p>
-
-          {/* Primary & Secondary CTAs */}
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
-            <button
-              onClick={() => {
-                switchRole('patient');
-                setActivePage('patient');
-              }}
-              className="px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-extrabold text-sm shadow-xl shadow-emerald-500/25 hover:brightness-110 hover:scale-105 active:scale-95 transition text-left group"
-            >
-              <div className="flex items-center space-x-2">
-                <Users className="w-5 h-5 text-slate-950" />
-                <span className="text-base font-black">I'm a Patient</span>
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+            
+            {/* Left Column: Hero Copy & CTA Cards (7 Cols) */}
+            <div className="lg:col-span-7 space-y-6 text-left">
+              
+              {/* Eyebrow */}
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-xs font-extrabold tracking-wider uppercase shadow-soft">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>REAL-TIME • AI-POWERED • FOR A HEALTHIER TOMORROW</span>
               </div>
-              <div className="text-[11px] text-slate-900 opacity-90 font-medium pl-7">
-                Book, check, track →
-              </div>
-            </button>
 
-            <button
-              onClick={() => {
-                switchRole('er_staff');
-                setActivePage('er_command');
-              }}
-              className="px-8 py-4 rounded-2xl bg-slate-900 border border-slate-700 text-white font-extrabold text-sm hover:bg-slate-800 hover:border-slate-600 transition text-left group"
-            >
-              <div className="flex items-center space-x-2">
-                <Building2 className="w-5 h-5 text-teal-400" />
-                <span className="text-base font-black">I'm Hospital Staff</span>
-              </div>
-              <div className="text-[11px] text-slate-400 font-medium pl-7">
-                Access dashboard →
-              </div>
-            </button>
-          </div>
-
-          {/* Floating Status Card */}
-          <div className="pt-8 max-w-3xl mx-auto">
-            <div className="p-6 rounded-3xl glass-panel bg-slate-900/90 border border-slate-800 shadow-2xl text-left space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div className="flex items-center space-x-2">
-                  <span className="h-3 w-3 rounded-full bg-emerald-400 animate-ping" />
-                  <span className="font-bold text-sm text-white">Live Network Status</span>
-                </div>
-                <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-bold">
-                  Operational
+              {/* Main Heading */}
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.12]">
+                Healthcare{' '}
+                <span className="text-emerald-600 block sm:inline">
+                  Without Delays
                 </span>
+              </h1>
+
+              {/* Description */}
+              <p className="text-base sm:text-lg text-slate-600 font-normal leading-relaxed max-w-2xl">
+                AI-powered appointments, real-time emergency resource sharing, and a connected hospital network — all in one platform.
+              </p>
+
+              {/* Two CTA Cards: I'm a Patient & I'm Hospital Staff */}
+              <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+                
+                {/* CTA Card 1: Patient */}
+                <div
+                  onClick={handlePatientClick}
+                  className="p-5 rounded-2xl bg-white border border-slate-200/80 hover:border-blue-300 shadow-card hover:shadow-card-hover transition-all duration-200 cursor-pointer group flex flex-col justify-between"
+                >
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors shadow-sm">
+                      <User className="w-5 h-5" />
+                    </div>
+                    <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[10px] font-bold">
+                      Patient Portal
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors flex items-center gap-1">
+                      <span>I'm a Patient</span>
+                      <ArrowRight className="w-4 h-4 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-blue-600" />
+                    </h3>
+                    <p className="text-xs text-slate-500 font-medium mt-1">
+                      Book, check, track
+                    </p>
+                  </div>
+                </div>
+
+                {/* CTA Card 2: Hospital Staff */}
+                <div
+                  onClick={handleHospitalStaffClick}
+                  className="p-5 rounded-2xl bg-white border border-slate-200/80 hover:border-emerald-300 shadow-card hover:shadow-card-hover transition-all duration-200 cursor-pointer group flex flex-col justify-between"
+                >
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors shadow-sm">
+                      <Building2 className="w-5 h-5" />
+                    </div>
+                    <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold">
+                      Clinical Ops
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 group-hover:text-emerald-600 transition-colors flex items-center gap-1">
+                      <span>I'm Hospital Staff</span>
+                      <ArrowRight className="w-4 h-4 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-emerald-600" />
+                    </h3>
+                    <p className="text-xs text-slate-500 font-medium mt-1">
+                      Access dashboard
+                    </p>
+                  </div>
+                </div>
+
               </div>
 
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800">
-                  <div className="text-xl font-black text-cyan-400 font-mono">6</div>
-                  <div className="text-[11px] text-slate-400 font-medium mt-0.5">Nearby Hospitals</div>
-                </div>
-                <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800">
-                  <div className="text-xl font-black text-emerald-400 font-mono">54</div>
-                  <div className="text-[11px] text-slate-400 font-medium mt-0.5">Critical Resources</div>
-                </div>
-                <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800">
-                  <div className="text-xl font-black text-rose-400 font-mono">2</div>
-                  <div className="text-[11px] text-slate-400 font-medium mt-0.5">Active Requests</div>
-                </div>
+              {/* Bottom Reassurance Message */}
+              <div className="pt-2 flex items-center gap-2.5 text-xs sm:text-sm font-semibold text-slate-600">
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                <span className="text-slate-900 font-bold">Every second counts.</span>
+                <span className="text-slate-500">We make sure help is closer.</span>
               </div>
 
-              <div className="text-center pt-1 text-xs font-semibold text-teal-300 italic">
-                "Every second counts. We make sure help is closer."
+            </div>
+
+            {/* Right Column: Large Professional Healthcare Visual & Floating Card (5 Cols) */}
+            <div className="lg:col-span-5 relative">
+              
+              {/* Main Visual Graphic Container */}
+              <div className="relative rounded-3xl bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 p-6 sm:p-8 text-white shadow-dropdown overflow-hidden border border-slate-800">
+                
+                {/* Background Radar Animation Circles */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
+                  <div className="w-72 h-72 rounded-full border border-blue-400 animate-ping" style={{ animationDuration: '4s' }} />
+                  <div className="w-96 h-96 rounded-full border border-teal-400 absolute" />
+                </div>
+
+                {/* Header in graphic */}
+                <div className="flex items-center justify-between pb-4 border-b border-slate-800/80 relative z-10">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-blue-500/20 border border-blue-400/40 flex items-center justify-center text-blue-400">
+                      <Radio className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-white">Bangalore Dispatch Grid</h4>
+                      <p className="text-[10px] text-slate-400">Live Telemetry & Radar</p>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    LIVE
+                  </span>
+                </div>
+
+                {/* Hospital Nodes Visual */}
+                <div className="py-6 space-y-3 relative z-10">
+                  <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <Building2 className="w-4 h-4 text-blue-400" />
+                      <div>
+                        <p className="text-xs font-bold text-white">DemoCare Central Hospital</p>
+                        <p className="text-[10px] text-slate-400">MG Road • 1.4 km</p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-bold text-emerald-400">4 ICU Beds Free</span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <Building2 className="w-4 h-4 text-blue-400" />
+                      <div>
+                        <p className="text-xs font-bold text-white">Apollo Trauma Center</p>
+                        <p className="text-[10px] text-slate-400">Indiranagar • 3.2 km</p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-bold text-emerald-400">6 ICU Beds Free</span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <Building2 className="w-4 h-4 text-blue-400" />
+                      <div>
+                        <p className="text-xs font-bold text-white">Manipal HAL Hospital</p>
+                        <p className="text-[10px] text-slate-400">HAL Airport Rd • 5.1 km</p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-bold text-emerald-400">8 ICU Beds Free</span>
+                  </div>
+                </div>
+
+                {/* Floating Card inside visual */}
+                <div className="mt-2 bg-white text-slate-900 rounded-2xl p-5 shadow-dropdown border border-slate-100 relative z-20">
+                  
+                  <div className="flex items-center justify-between mb-3.5 pb-2.5 border-b border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                        Live Network Status
+                      </span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200/60">
+                      Operational
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-left text-xs">
+                    
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                      <p className="text-[11px] font-bold text-slate-500">Nearby Hospitals</p>
+                      <p className="text-sm font-extrabold text-slate-900 mt-0.5">8 within 15 km</p>
+                      <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">All synchronized</p>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                      <p className="text-[11px] font-bold text-slate-500">Critical Resources</p>
+                      <p className="text-sm font-extrabold text-slate-900 mt-0.5">Available</p>
+                      <p className="text-[10px] text-blue-600 font-semibold mt-0.5">ICU, O₂, Blood O-neg</p>
+                    </div>
+
+                  </div>
+
+                  <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span className="text-slate-500 font-medium">Active Emergency Requests</span>
+                    <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                      {emergencyRequests.length} in Queue • 4 Dispatched
+                    </span>
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+      </section>
+
+      {/* ======================================================= */}
+      {/* 2. METRICS STRIP                                        */}
+      {/* ======================================================= */}
+      <section className="py-12 bg-white border-b border-slate-200/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
+            
+            {/* Metric 1 */}
+            <div className="flex items-center gap-3.5 p-4 rounded-2xl bg-slate-50/70 border border-slate-100">
+              <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0 shadow-sm">
+                <Building2 className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">50+</p>
+                <p className="text-xs sm:text-sm font-semibold text-slate-600">Hospitals Connected</p>
               </div>
             </div>
+
+            {/* Metric 2 */}
+            <div className="flex items-center gap-3.5 p-4 rounded-2xl bg-slate-50/70 border border-slate-100">
+              <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 shadow-sm">
+                <User className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">10,000+</p>
+                <p className="text-xs sm:text-sm font-semibold text-slate-600">Patients Benefited</p>
+              </div>
+            </div>
+
+            {/* Metric 3 */}
+            <div className="flex items-center gap-3.5 p-4 rounded-2xl bg-slate-50/70 border border-slate-100">
+              <div className="w-12 h-12 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 shrink-0 shadow-sm">
+                <Clock className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Under 3 Min</p>
+                <p className="text-xs sm:text-sm font-semibold text-slate-600">Average Emergency Response</p>
+              </div>
+            </div>
+
+            {/* Metric 4 */}
+            <div className="flex items-center gap-3.5 p-4 rounded-2xl bg-slate-50/70 border border-slate-100">
+              <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0 shadow-sm">
+                <Radio className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">15 km</p>
+                <p className="text-xs sm:text-sm font-semibold text-slate-600">Smart Geo-Dispatch Radius</p>
+              </div>
+            </div>
+
           </div>
+        </div>
+      </section>
 
-          {/* Interactive Network Graph */}
-          <div className="pt-6">
-            <div className="p-6 md:p-8 rounded-3xl glass-panel bg-slate-950/90 border border-slate-800 relative overflow-hidden">
-              <div className="text-center mb-6">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-500">
-                  INTERACTIVE REGIONAL NETWORK GRAPH
-                </span>
+      {/* ======================================================= */}
+      {/* 3. MULTILINGUAL VOICE DEMO STRIP                        */}
+      {/* ======================================================= */}
+      <section className="py-12 bg-slate-50 border-b border-slate-200/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-soft">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b border-slate-100">
+              <div>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Languages className="w-4 h-4 text-blue-600" />
+                  <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Natural Speech Intake</span>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900">
+                  Multilingual AI Clinical Receptionist
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                  Powered by Sarvam AI Indic language models with clinical entity extraction.
+                </p>
               </div>
 
-              <div className="relative w-full h-72 flex items-center justify-center">
-                <svg className="absolute inset-0 w-full h-full pointer-events-none stroke-cyan-500/30 stroke-2">
-                  <line x1="50%" y1="50%" x2="20%" y2="25%" className="animate-line-flow" />
-                  <line x1="50%" y1="50%" x2="80%" y2="25%" className="animate-line-flow" />
-                  <line x1="50%" y1="50%" x2="15%" y2="75%" className="animate-line-flow" />
-                  <line x1="50%" y1="50%" x2="85%" y2="75%" className="animate-line-flow" />
-                  <line x1="50%" y1="50%" x2="50%" y2="15%" className="animate-line-flow" />
-                </svg>
-
-                <div className="relative z-20 flex flex-col items-center">
-                  <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center shadow-2xl shadow-teal-500/40 animate-node-glow">
-                    <Activity className="w-10 h-10 text-slate-950 animate-pulse" />
-                  </div>
-                  <span className="mt-2 font-black text-xs text-teal-300 tracking-wider">MEDCONNECT PULSE</span>
-                  <span className="text-[10px] text-slate-400 font-mono">Central n8n Engine</span>
-                </div>
-
-                <div className="absolute top-2 flex flex-col items-center z-10">
-                  <div className="p-2.5 rounded-2xl bg-slate-900 border border-cyan-500/40 text-cyan-400">
-                    <Users className="w-4 h-4" />
-                  </div>
-                  <span className="text-[11px] font-bold text-slate-200 mt-1">PATIENT</span>
-                </div>
-
-                <div className="absolute top-8 left-8 flex flex-col items-center z-10">
-                  <div className="p-2.5 rounded-2xl bg-slate-900 border border-rose-500/40 text-rose-400">
-                    <Building2 className="w-4 h-4" />
-                  </div>
-                  <span className="text-[11px] font-bold text-slate-200 mt-1">HOSPITAL A</span>
-                </div>
-
-                <div className="absolute top-8 right-8 flex flex-col items-center z-10">
-                  <div className="p-2.5 rounded-2xl bg-slate-900 border border-emerald-500/40 text-emerald-400">
-                    <Building2 className="w-4 h-4" />
-                  </div>
-                  <span className="text-[11px] font-bold text-slate-200 mt-1">HOSPITAL B</span>
-                </div>
-
-                <div className="absolute bottom-8 left-10 flex flex-col items-center z-10">
-                  <div className="p-2.5 rounded-2xl bg-slate-900 border border-blue-500/40 text-blue-400">
-                    <Building2 className="w-4 h-4" />
-                  </div>
-                  <span className="text-[11px] font-bold text-slate-200 mt-1">HOSPITAL C</span>
-                </div>
-
-                <div className="absolute bottom-8 right-10 flex flex-col items-center z-10">
-                  <div className="p-2.5 rounded-2xl bg-slate-900 border border-amber-500/40 text-amber-400">
-                    <ShieldAlert className="w-4 h-4" />
-                  </div>
-                  <span className="text-[11px] font-bold text-slate-200 mt-1">ER TEAM</span>
-                </div>
-              </div>
-
-              <div className="pt-2 flex flex-wrap justify-center gap-2">
-                {floatingEvents.map((ev) => (
-                  <span
-                    key={ev.id}
-                    className={`px-3 py-1 rounded-xl glass-panel bg-slate-950 text-[11px] font-mono border ${ev.color} animate-float`}
+              {/* Language Switcher */}
+              <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-xl border border-slate-200/60">
+                {languages.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => setSelectedLanguageDemo(lang.code)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      selectedLanguageDemo === lang.code
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
                   >
-                    ⚡ {ev.text} <span className="opacity-60 text-[9px]">({ev.time})</span>
-                  </span>
+                    {lang.name}
+                  </button>
                 ))}
               </div>
             </div>
-          </div>
 
-        </div>
-      </section>
+            <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+                  <Mic className="w-5 h-5 animate-pulse" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Simulated Patient Speech Query</p>
+                  <p className="text-sm font-semibold text-slate-800 italic mt-0.5">
+                    {languages.find((l) => l.code === selectedLanguageDemo)?.text}
+                  </p>
+                </div>
+              </div>
 
-      {/* Metrics Section */}
-      <section className="py-4">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-2">
-            <div className="w-10 h-10 rounded-2xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center mx-auto text-teal-400">
-              <Building2 className="w-5 h-5" />
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleAiReceptionistClick}
+                rightIcon={ArrowRight}
+                className="shrink-0"
+              >
+                Launch Live AI Receptionist
+              </Button>
             </div>
-            <div className="text-3xl font-black text-white font-mono">50+</div>
-            <div className="text-xs font-semibold text-slate-400">Hospitals Connected</div>
-          </div>
-
-          <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-2">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto text-emerald-400">
-              <Users className="w-5 h-5" />
-            </div>
-            <div className="text-3xl font-black text-white font-mono">10,000+</div>
-            <div className="text-xs font-semibold text-slate-400">Patients Benefited</div>
-          </div>
-
-          <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-2">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400">
-              <Clock className="w-5 h-5" />
-            </div>
-            <div className="text-2xl font-black text-white font-mono">Under 3 Min</div>
-            <div className="text-xs font-semibold text-slate-400">Average Emergency Response</div>
-          </div>
-
-          <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-2">
-            <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center mx-auto text-cyan-400">
-              <MapPin className="w-5 h-5" />
-            </div>
-            <div className="text-3xl font-black text-white font-mono">15 km</div>
-            <div className="text-xs font-semibold text-slate-400">Smart Geo-Dispatch Radius</div>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="space-y-8">
-        <div className="text-center max-w-2xl mx-auto space-y-2">
-          <span className="text-xs font-mono font-bold text-teal-400 uppercase tracking-widest">CORE CAPABILITIES</span>
-          <h2 className="text-3xl font-black text-white">One Platform. Many Lives. Real Impact.</h2>
+      {/* ======================================================= */}
+      {/* 4. FEATURE SECTION                                      */}
+      {/* ======================================================= */}
+      <section id="how-it-works" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        
+        {/* Section Header */}
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <Badge variant="blue" size="md" className="mb-3">
+            Core Technological Pillars
+          </Badge>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+            One Platform. Many Lives. Real Impact.
+          </h2>
+          <p className="mt-3 text-base text-slate-600 leading-relaxed">
+            Eliminating clinical bottlenecks from primary triage to high-acuity emergency dispatch.
+          </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        {/* Three Feature Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           
           {/* Card 1: AI Receptionist */}
-          <div className="p-8 rounded-3xl bg-slate-900 border border-slate-800 space-y-5 hover:border-teal-500/40 transition group">
-            <div className="w-12 h-12 rounded-2xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 group-hover:scale-110 transition-transform">
-              <Mic className="w-6 h-6" />
+          <div className="p-8 rounded-3xl bg-white border border-slate-200/80 shadow-card hover:shadow-card-hover transition-all duration-200 flex flex-col justify-between">
+            <div>
+              <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-6 shadow-sm">
+                <Mic className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 tracking-tight mb-3">
+                AI Receptionist
+              </h3>
+              <p className="text-sm text-slate-600 leading-relaxed mb-6">
+                Multilingual triage in English, Hindi, Tamil, and Telugu. Understands symptoms, determines clinical urgency, and reserves an atomic slot in under 15 seconds.
+              </p>
+              
+              <ul className="space-y-2.5 text-xs text-slate-600 font-medium">
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Sarvam AI Saaras STT & Bulbul TTS</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Automated department routing & safety checks</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Instant verified digital QR token pass</span>
+                </li>
+              </ul>
             </div>
-            <h3 className="text-xl font-bold text-white">AI Receptionist</h3>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Multilingual voice intake powered by Sarvam STT & OpenAI intent parsing. Book OPD appointments, check queue status, or get clinic help in real-time.
-            </p>
-            <button
-              onClick={() => setAiWidgetOpen(true)}
-              className="text-xs font-bold text-teal-400 hover:text-teal-300 flex items-center space-x-1 pt-2"
-            >
-              <span>Test AI Receptionist</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+
+            <div className="pt-6 mt-6 border-t border-slate-100">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleAiReceptionistClick}
+                className="w-full justify-between"
+                rightIcon={ArrowRight}
+              >
+                Try Voice Booking
+              </Button>
+            </div>
           </div>
 
           {/* Card 2: Emergency Geo-Dispatch */}
-          <div className="p-8 rounded-3xl bg-slate-900 border border-slate-800 space-y-5 hover:border-rose-500/40 transition group">
-            <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 group-hover:scale-110 transition-transform">
-              <Truck className="w-6 h-6" />
+          <div className="p-8 rounded-3xl bg-white border border-slate-200/80 shadow-card hover:shadow-card-hover transition-all duration-200 flex flex-col justify-between relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full blur-2xl pointer-events-none" />
+            
+            <div>
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 mb-6 shadow-sm">
+                <Radio className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 tracking-tight mb-3">
+                Emergency Geo-Dispatch
+              </h3>
+              <p className="text-sm text-slate-600 leading-relaxed mb-6">
+                Instant Haversine-based broadcast to hospitals within 15 km. First responding hospital atomically locks ICU beds and oxygen cylinders with zero double allocations.
+              </p>
+              
+              <ul className="space-y-2.5 text-xs text-slate-600 font-medium">
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>Sub-3-minute nearby radius dispatch</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>120-second automatic escalation timer</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>Cryptographic QR ambulance pass</span>
+                </li>
+              </ul>
             </div>
-            <h3 className="text-xl font-bold text-white">Emergency Geo-Dispatch</h3>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              15 km Haversine radar automatically finds nearby facilities with available Oxygen, Blood, or ICU Beds and dispatches Telegram SOS alerts in &lt;30s.
-            </p>
-            <button
-              onClick={() => runDemoScenario(4)}
-              className="text-xs font-bold text-rose-400 hover:text-rose-300 flex items-center space-x-1 pt-2"
-            >
-              <span>Simulate Geo-Dispatch</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+
+            <div className="pt-6 mt-6 border-t border-slate-100">
+              <Button
+                variant="emergency"
+                size="sm"
+                onClick={handleHospitalStaffClick}
+                className="w-full justify-between shadow-sm"
+                rightIcon={ArrowRight}
+              >
+                View Emergency Dispatch
+              </Button>
+            </div>
           </div>
 
           {/* Card 3: Unified Hospital Network */}
-          <div className="p-8 rounded-3xl bg-slate-900 border border-slate-800 space-y-5 hover:border-cyan-500/40 transition group">
-            <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform">
-              <Building2 className="w-6 h-6" />
+          <div className="p-8 rounded-3xl bg-white border border-slate-200/80 shadow-card hover:shadow-card-hover transition-all duration-200 flex flex-col justify-between">
+            <div>
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 mb-6 shadow-sm">
+                <Building2 className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 tracking-tight mb-3">
+                Unified Hospital Network
+              </h3>
+              <p className="text-sm text-slate-600 leading-relaxed mb-6">
+                Interconnected clinical dashboard synchronizing OPD queues, doctor prescription pads, camera kiosk check-ins, and regional emergency capacity in real time.
+              </p>
+              
+              <ul className="space-y-2.5 text-xs text-slate-600 font-medium">
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Kiosk check-in with single-use verification</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Doctor OPD with ICD-10 drug interaction guards</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Reactive Supabase Realtime synchronization</span>
+                </li>
+              </ul>
             </div>
-            <h3 className="text-xl font-bold text-white">Unified Hospital Network</h3>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Eliminates medical silos. Connects hospital ICUs, blood banks, and OPD queues into one synchronized regional safety net.
+
+            <div className="pt-6 mt-6 border-t border-slate-100">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  switchRole('hospital_admin');
+                  setActivePage('hospital_network');
+                }}
+                className="w-full justify-between"
+                rightIcon={ArrowRight}
+              >
+                Explore Hospital Hub
+              </Button>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* ======================================================= */}
+      {/* 5. OUR NETWORK SECTION                                  */}
+      {/* ======================================================= */}
+      <section id="network" className="py-16 bg-white border-y border-slate-200/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl mx-auto text-center mb-12">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              Connected Across Bangalore's Key Corridors
+            </h3>
+            <p className="text-sm text-slate-600 mt-2">
+              Instant resource balancing between premier medical trauma hubs within 15 km.
             </p>
-            <button
-              onClick={() => setActivePage('hospital_network')}
-              className="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center space-x-1 pt-2"
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 text-left">
+            {[
+              { name: 'DemoCare Central Hospital', loc: 'MG Road', beds: '4 ICU Beds', phone: '+91 80 2200 1111' },
+              { name: 'Apollo Trauma Center', loc: 'Indiranagar 100ft', beds: '6 ICU Beds', phone: '+91 80 2500 2222' },
+              { name: 'Manipal HAL Hospital', loc: 'HAL Airport Road', beds: '8 ICU Beds', phone: '+91 80 2600 3333' },
+              { name: 'Fortis Bannerghatta', loc: 'Bannerghatta Road', beds: '3 ICU Beds', phone: '+91 80 2700 4444' },
+              { name: 'Columbia Asia Whitefield', loc: 'Whitefield Main Rd', beds: '5 ICU Beds', phone: '+91 80 2800 5555' },
+            ].map((h, i) => (
+              <div key={i} className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 hover:bg-white hover:shadow-card transition-all">
+                <div className="flex items-center gap-2 mb-2">
+                  <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                  <span className="text-[11px] font-bold text-blue-700">{h.loc}</span>
+                </div>
+                <h4 className="text-xs font-bold text-slate-900 leading-snug mb-1">{h.name}</h4>
+                <p className="text-[11px] font-semibold text-emerald-600 mb-2">{h.beds} Available</p>
+                <p className="text-[10px] text-slate-500">{h.phone}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ======================================================= */}
+      {/* 6. ABOUT SECTION                                        */}
+      {/* ======================================================= */}
+      <section id="about" className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="p-8 sm:p-12 rounded-3xl bg-gradient-to-br from-slate-900 to-blue-950 text-white shadow-dropdown grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+          
+          <div className="md:col-span-8 space-y-3">
+            <Badge variant="blue" size="md">
+              Enterprise Clinical Standards
+            </Badge>
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              Designed For High-Throughput & Zero Double Allocations
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-300 font-normal leading-relaxed max-w-2xl">
+              MedConnect Pulse utilizes PostgreSQL row-level locking (<code className="text-blue-300 font-mono">FOR UPDATE</code>), cryptographic QR token hashes, and automated Telegram bots to deliver verifiable healthcare workflows.
+            </p>
+          </div>
+
+          <div className="md:col-span-4 flex flex-col sm:flex-row md:flex-col gap-3 justify-center">
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={() => navigate('/login')}
+              className="w-full shadow-md"
             >
-              <span>View Network Map</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+              Sign In to Portal
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={handleOpenAudit}
+              className="w-full bg-white/10 hover:bg-white/20 text-white border-white/20"
+              leftIcon={Terminal}
+            >
+              Open Audit Console
+            </Button>
           </div>
 
         </div>
       </section>
 
+      {/* ======================================================= */}
+      {/* 7. FOOTER                                               */}
+      {/* ======================================================= */}
+      <footer className="bg-white border-t border-slate-200/80 py-10 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center">
+              <HeartPulse className="w-3.5 h-3.5" />
+            </div>
+            <span className="font-bold text-slate-800">MedConnect Pulse</span>
+            <span>• Connecting Care When Seconds Count</span>
+          </div>
+
+          <div className="flex items-center gap-6 font-medium">
+            <a href="#how-it-works" className="hover:text-blue-600 transition-colors">How It Works</a>
+            <a href="#network" className="hover:text-blue-600 transition-colors">Our Network</a>
+            <a href="#about" className="hover:text-blue-600 transition-colors">About</a>
+            <button
+              type="button"
+              onClick={() => navigate('/login')}
+              className="hover:text-blue-600 transition-colors font-bold cursor-pointer"
+            >
+              Sign In
+            </button>
+          </div>
+        </div>
+      </footer>
+      
+      {/* Master Telemetry Audit Console Drawer */}
+      <AuditConsoleModal
+        isOpen={auditOpen}
+        onClose={() => setAuditOpen(false)}
+      />
     </div>
   );
 };

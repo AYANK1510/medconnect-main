@@ -129,10 +129,11 @@ export async function sendUnifiedNotification(options: {
         } else {
           try {
             const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+            const cleanText = `🚨 ${options.title}\n\n${options.message}`;
             const resp = await fetch(telegramUrl, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ chat_id: chatId, text: `🚨 ${options.title}\n\n${options.message}`, parse_mode: 'HTML' }),
+              body: JSON.stringify({ chat_id: chatId, text: cleanText }),
             });
             if (resp.ok) {
               initialStatus = 'SENT';
